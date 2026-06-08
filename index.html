@@ -86,7 +86,6 @@
             display: flex;
             justify-content: space-between;
         }
-
     </style>
 </head>
 <body>
@@ -97,7 +96,7 @@
                 <h1>Espace Personnel</h1>
                 <p class="subtitle">Entraînement cognitif & Compétences techniques</p>
             </div>
-            <div class="stat-badge" id="total-xp">XP: ...</div>
+            <div class="stat-badge" id="total-xp">XP Globale: ...</div>
         </div>
 
         <div class="grid-apps">
@@ -128,46 +127,57 @@
                     <span id="stat-othello-xp">XP: --</span>
                 </div>
             </a>
-            
+
             <a href="jacquet_pro.html" class="app-card">
                 <div class="app-icon">🎲</div>
                 <div class="app-title">Jacquet Tradition</div>
-                <div class="app-desc">Maîtrisez la règle du Postillon, bloquez votre adversaire et calculez vos probabilités aux dés. IA d'entraînement ou Duel Local.</div>
+                <div class="app-desc">Maîtrisez la règle du Postillon, bloquez votre adversaire et calculez vos probabilités aux dés.</div>
                 <div class="app-stats">
                     <span id="stat-jacquet-xp">XP: --</span>
                 </div>
             </a>
-            
+
+            <a href="mancala_pro.html" class="app-card">
+                <div class="app-icon">🕳️</div>
+                <div class="app-title">Mancala : Awélé</div>
+                <div class="app-desc">Le grand jeu des graines africain. Calculez vos récoltes à l'avance et distribuez vos pions avec stratégie.</div>
+                <div class="app-stats">
+                    <span id="stat-mancala-xp">XP: --</span>
+                </div>
+            </a>
         </div>
     </div>
 
     <script>
-        // MÊME BASE DE DONNÉES QUE LES ENFANTS
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         
         async function chargerStatsPro() {
             try {
-                // On va chercher vos données dans le tiroir "parent"
                 let res = await fetch(`${FIREBASE_URL}scores/parent.json`);
                 let data = await res.json() || {};
 
+                // Récupération sécurisée de tous les scores de vos jeux
                 let xpEchecs = data.echecsPro ? (data.echecsPro.xp || 0) : 0;
-                let xpOthello = data.othelloPro ? (data.othelloPro.xp || 0) : 0; // Ajout d'Othello ici !
+                let xpOthello = data.othelloPro ? (data.othelloPro.xp || 0) : 0;
+                let xpJacquet = data.jacquetPro ? (data.jacquetPro.xp || 0) : 0;
+                let xpMancala = data.mancalaPro ? (data.mancalaPro.xp || 0) : 0;
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
                 let dactyloAcc = data.dactyloPro ? (data.dactyloPro.acc || 0) : 0;
 
-                // On additionne tout (on donne 10 XP par Mots Par Minute pour la Dactylo)
-                let totalXp = xpEchecs + xpOthello + (dactyloRecord * 10);
+                // Calcul du total général
+                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + (dactyloRecord * 10);
 
-                // On affiche les textes dans les bonnes cases
+                // Envoi des chiffres sur l'écran
                 document.getElementById('total-xp').textContent = `XP Globale: ${totalXp}`;
                 document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
                 document.getElementById('stat-othello-xp').textContent = `XP: ${xpOthello}`;
+                document.getElementById('stat-jacquet-xp').textContent = `XP: ${xpJacquet}`;
+                document.getElementById('stat-mancala-xp').textContent = `XP: ${xpMancala}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
                 document.getElementById('stat-dactylo-acc').textContent = `Prc: ${dactyloAcc}%`;
 
             } catch(e) {
-                console.error("Erreur de connexion Firebase", e);
+                console.error("Erreur Cloud", e);
             }
         }
 

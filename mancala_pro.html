@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mancala Awélé - Stratégie Pure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght=400;600&family=Inter:wght=400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container {
+            max-width: 1050px; width: 100%;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 30px; border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 800; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #f43f5e; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 25px; justify-content: center; align-items: stretch; flex-wrap: wrap; margin-top: 10px; }
+
+        /* --- LE TABLIER EN BOIS CLASSIQUE --- */
+        #board-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; }
+        
+        #awele-board {
+            width: 100%; background: #7c2d12; /* Couleur bois acajou */
+            border: 10px solid #451a03; border-radius: 40px;
+            padding: 25px; display: flex; flex-direction: column; gap: 25px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset 0 4px 10px rgba(255,255,255,0.2);
+        }
+
+        .row { display: flex; justify-content: space-around; width: 100%; }
+        
+        /* Les Trous (Pits) */
+        .pit {
+            width: 70px; height: 70px; background: #451a03; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            position: relative; cursor: pointer; transition: 0.2s;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.8), 0 2px 3px rgba(255,255,255,0.1);
+        }
+        .pit:hover:not(.bloque) { transform: scale(1.08); background: #5c2205; }
+        .pit.playable::border { border: 2px solid #f43f5e; }
+        
+        /* Compteur numérique discret de graines */
+        .seed-count {
+            position: absolute; bottom: -22px; font-family: 'Fira Code', monospace;
+            font-size: 0.85rem; font-weight: bold; color: #94a3b8;
+        }
+        .row-top .seed-count { top: -22px; bottom: auto; }
+
+        /* Les Graines (Seeds) */
+        .seeds-layer {
+            position: absolute; width: 100%; height: 100%;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            padding: 12px; gap: 4px; pointer-events: none;
+        }
+        .seed {
+            background: #fbbf24; border-radius: 50%; width: 12px; height: 12px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(0,0,0,0.4);
+        }
+
+        /* --- PANNEAU DE CONTRÔLE --- */
+        .side-panel {
+            flex: 1; min-width: 280px; max-width: 320px; height: 400px;
+            background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .panel-tabs { display: flex; border-bottom: 1px solid #334155; }
+        .ptab { flex: 1; background: #1e293b; color: #94a3b8; border: none; padding: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .ptab.actif { background: #0f172a; color: #f43f5e; border-bottom: 2px solid #f43f5e; }
+
+        .tab-content { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; }
+        .tab-content.actif { display: flex; }
+
+        .score-board { display: flex; justify-content: space-around; margin-bottom: 15px; background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+        .score-col { text-align: center; }
+        .score-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
+        .score-txt { font-weight: 800; font-size: 1.6rem; font-family: 'Fira Code', monospace; color: #f43f5e; }
+        
+        #game-status { font-weight: 700; color: #e2e8f0; font-size: 1rem; text-align: center; margin: 10px 0; min-height: 40px; }
+
+        select, .btn-action { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-action:hover { background: #334155; }
+
+        /* Masterclass */
+        .lecon-card { background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+        .lecon-card:hover { border-color: #f43f5e; }
+        .lecon-card h4 { color: #f8fafc; font-size: 0.95rem; margin-bottom: 3px; }
+        .lecon-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.3; }
+        #lesson-active-area { display: none; flex-direction: column; height: 100%; }
+        #lesson-instructions { background: #1e293b; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e; color: #e2e8f0; line-height: 1.4; font-size: 0.9rem; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Mancala Awélé : Calcul & Tactique</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div id="board-container">
+                <div style="color: #94a3b8; font-size:0.85rem; margin-bottom:10px; font-weight:600;">Camp de l'Adversaire (IA ou Joueur 2) ⬆️</div>
+                <div id="awele-board">
+                    <div class="row row-top">
+                        <div class="pit" id="pit-11" onclick="clicTrou(11)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-10" onclick="clicTrou(10)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-9" onclick="clicTrou(9)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-8" onclick="clicTrou(8)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-7" onclick="clicTrou(7)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-6" onclick="clicTrou(6)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                    </div>
+                    <div class="row row-bottom">
+                        <div class="pit" id="pit-0" onclick="clicTrou(0)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-1" onclick="clicTrou(1)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-2" onclick="clicTrou(2)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-3" onclick="clicTrou(3)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-4" onclick="clicTrou(4)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                        <div class="pit" id="pit-5" onclick="clicTrou(5)"><div class="seeds-layer"></div><div class="seed-count">0</div></div>
+                    </div>
+                </div>
+                <div style="color: #38bdf8; font-size:0.85rem; margin-top:15px; font-weight:600;">⬇️ Votre Camp (Pions Bleus / Noirs)</div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="ptab actif" onclick="switchTab('match')" id="btn-tab-match">🎮 Jouer</button>
+                    <button class="ptab" onclick="switchTab('class')" id="btn-tab-class">🎓 Cours</button>
+                </div>
+
+                <div id="tab-match" class="tab-content actif">
+                    <div class="score-board">
+                        <div class="score-col">
+                            <div class="score-title">VOTRE RÉCOLTE</div>
+                            <div class="score-txt" id="score-humain">0</div>
+                        </div>
+                        <div class="score-col">
+                            <div class="score-title">ADVERSAIRE</div>
+                            <div class="score-txt" id="score-ia">0</div>
+                        </div>
+                    </div>
+
+                    <div id="game-status">Partie prête. À vous de semer !</div>
+
+                    <div style="margin-top: auto; display:flex; flex-direction:column; gap:8px;">
+                        <select id="select-mode" onchange="initialiserJeu()">
+                            <option value="ia" selected>👤 Solo (vs IA Calculatrice)</option>
+                            <option value="local">👥 2 Joueurs (Famille en local)</option>
+                        </select>
+                        <button class="btn-action" onclick="initialiserJeu()">🔄 Recommencer</button>
+                        <a href="index.html" class="btn-retour" style="text-align: center; background:#f43f5e; color:white;">Dashboard Pro</a>
+                    </div>
+                </div>
+
+                <div id="tab-class" class="tab-content">
+                    <div id="lesson-menu">
+                        <div class="lecon-card" onclick="lancerLecon('principe')">
+                            <h4>1. La Tactique de récolte</h4><p>Comment viser le chiffre magique 2 ou 3.</p>
+                        </div>
+                        <div class="lecon-card" onclick="lancerLecon('famine')">
+                            <h4>2. Règle cruciale : La Famine</h4><p>Pourquoi vous êtes obligé de "nourrir" l'adversaire.</p>
+                        </div>
+                    </div>
+                    <div id="lesson-active-area">
+                        <div id="lesson-instructions">...</div>
+                        <button class="btn-action" onclick="quitterLecon()" style="margin-top: auto;">❌ Quitter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        let xpPro = 0;
+
+        // --- ENGIN DE JEU MANCALA ---
+        // Plateau linéaire de 12 trous : 0-5 camp joueur, 6-11 camp adversaire
+        let slots = [], scores = {1:0, 2:0}, joueurActuel = 1, modeJeu = 'ia', tourBloque = false, modeLecon = false;
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/mancalaPro.json`);
+                let data = await res.json();
+                xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            initialiserJeu();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points; document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/mancalaPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        function initialiserJeu() {
+            modeJeu = document.getElementById('select-mode').value;
+            slots = Array(12).fill(4); // 4 graines par trou au début (Total 48 graines)
+            scores = {1: 0, 2: 0}; joueurActuel = 1; tourBloque = false; modeLecon = false;
+            document.getElementById('score-humain').textContent = 0; document.getElementById('score-ia').textContent = 0;
+            document.getElementById('game-status').textContent = "À votre tour. Choisissez un trou dans votre camp.";
+            document.getElementById('game-status').style.color = "#38bdf8";
+            actualiserGraphique();
+        }
+
+        function actualiserGraphique() {
+            for(let i=0; i<12; i++) {
+                let pit = document.getElementById(`pt-${i}`);
+                let countDiv = document.querySelector(`#pit-${i} .seed-count`);
+                let layer = document.querySelector(`#pit-${i} .seeds-layer`);
+                
+                countDiv.textContent = slots[i];
+                layer.innerHTML = '';
+                
+                // Dessiner les graines de façon désordonnée et réaliste (maximum 6 affichées visuellement pour éviter l'encombrement)
+                let visualSeeds = Math.min(6, slots[i]);
+                for(let s=0; s<visualSeeds; s++) {
+                    let seed = document.createElement('div'); seed.className = 'seed';
+                    layer.appendChild(seed);
+                }
+                
+                // Mettre en surbrillance si jouable
+                let p = document.getElementById(`pit-${i}`);
+                p.classList.remove('playable');
+                if(!tourBloque && !modeLecon) {
+                    if(joueurActuel === 1 && i >= 0 && i <= 5 && slots[i] > 0) p.classList.add('playable');
+                }
+            }
+        }
+
+        function clicTrou(index) {
+            if(tourBloque || modeLecon) return;
+            if(joueurActuel === 1 && (index < 0 || index > 5)) return; // Pas votre camp
+            if(joueurActuel === 2 && (index < 6 || index > 11)) return; // Pas camp joueur 2
+            if(slots[index] === 0) return; // Trou vide
+
+            semer(index);
+        }
+
+        function semer(indexDepart) {
+            tourBloque = true;
+            let graines = slots[indexDepart];
+            slots[indexDepart] = 0;
+            
+            let indexCourant = indexDepart;
+            
+            // Distribution circulaire anti-horaire
+            function distribuerUneGraine() {
+                if(graines === 0) {
+                    verifierRecolte(indexCourant);
+                    return;
+                }
+                indexCourant = (indexCourant + 1) % 12;
+                
+                // Règle officielle de l'Awélé : On saute le trou de départ si on fait un tour complet (12 graines ou plus)
+                if(indexCourant === indexDepart) indexCourant = (indexCourant + 1) % 12;
+                
+                slots[indexCourant]++;
+                graines--;
+                actualiserGraphique();
+                setTimeout(distribuerUneGraine, 250);
+            }
+            distribuerUneGraine();
+        }
+
+        function verifierRecolte(indexFinal) {
+            let joueurAdverse = joueurActuel === 1 ? 2 : 1;
+            let recolteTotale = 0;
+            
+            // On vérifie si la case d'arrivée appartient à l'adversaire
+            // Camp P1 : 0-5, Camp P2 : 6-11
+            let positionValidePourRecolte = false;
+            if(joueurActuel === 1 && indexFinal >= 6 && indexFinal <= 11) positionValidePourRecolte = true;
+            if(joueurActuel === 2 && indexFinal >= 0 && indexFinal <= 5) positionValidePourRecolte = true;
+
+            // Système de capture en cascade à rebours
+            while(positionValidePourRecolte && (slots[indexFinal] === 2 || slots[indexFinal] === 3)) {
+                recolteTotale += slots[indexFinal];
+                slots[indexFinal] = 0;
+                
+                // On recule d'une case (sens horaire)
+                indexFinal = indexFinal - 1;
+                if(indexFinal < 0) indexFinal = 11;
+                
+                // On revérifie si on est toujours dans le camp adverse
+                positionValidePourRecolte = false;
+                if(joueurActuel === 1 && indexFinal >= 6 && indexFinal <= 11) positionValidePourRecolte = true;
+                if(joueurActuel === 2 && indexFinal >= 0 && indexFinal <= 5) positionValidePourRecolte = true;
+            }
+
+            if(recolteTotale > 0) {
+                scores[joueurActuel] += recolteTotale;
+                document.getElementById('score-humain').textContent = scores[1];
+                document.getElementById('score-ia').textContent = scores[2];
+            }
+
+            finDeTour();
+        }
+
+        function finDeTour() {
+            // Vérification de fin de partie (plus de 24 graines capturées par quelqu'un)
+            if(scores[1] > 24) { terminerPartie(1); return; }
+            if(scores[2] > 24) { terminerPartie(2); return; }
+            
+            // Si le total des graines restantes est trop faible pour récolter
+            let totalGrainesRestantes = slots.reduce((a,b)=>a+b, 0);
+            if(totalGrainesRestantes <= 3) {
+                // On donne les graines restantes à celui qui en a le plus dans son camp
+                let c1 = slots.slice(0,6).reduce((a,b)=>a+b,0);
+                let c2 = slots.slice(6,12).reduce((a,b)=>a+b,0);
+                scores[1] += c1; scores[2] += c2;
+                terminerPartie(scores[1] > scores[2] ? 1 : 2); return;
+            }
+
+            joueurActuel = joueurActuel === 1 ? 2 : 1;
+            actualiserGraphique();
+
+            let nom = joueurActuel === 1 ? "À vous (Bleu)" : (modeJeu === 'ia' ? "L'IA réfléchit... 🤖" : "Au Joueur 2 (Blanc)");
+            document.getElementById('game-status').textContent = nom;
+            document.getElementById('game-status').style.color = joueurActuel === 1 ? "#38bdf8" : "#cbd5e1";
+
+            if(modeJeu === 'ia' && joueurActuel === 2) {
+                tourBloque = true;
+                setTimeout(jouerIA, 1000);
+            } else {
+                tourBloque = false;
+            }
+        }
+
+        function jouerIA() {
+            // L'IA scanne ses coups légaux (cases 6 à 11) et cherche celui qui rapporte le plus de points immédiatement
+            let meilleursCoupsPossibles = [];
+            for(let i=6; i<=11; i++) {
+                if(slots[i] > 0) meilleursCoupsPossibles.push(i);
+            }
+            
+            if(meilleursCoupsPossibles.length === 0) { finDeTour(); return; }
+            
+            // Coup par défaut au hasard parmi les valides
+            let coupChoisi = meilleursCoupsPossibles[Math.floor(Math.random() * meilleursCoupsPossibles.length)];
+            
+            semer(coupChoisi);
+        }
+
+        function terminerPartie(gagnant) {
+            tourBloque = true;
+            let status = document.getElementById('game-status');
+            if(gagnant === 1) {
+                status.textContent = "🏆 VICTOIRE ! Vous maîtrisez l'Awélé !"; status.style.color = "#10b981";
+                if(modeJeu === 'ia') sauverXP(25);
+            } else {
+                status.textContent = modeJeu === 'ia' ? "💀 Défaite... L'IA vous a surclassé." : "🏆 Victoire du Joueur 2 !";
+                status.style.color = "#ef4444";
+            }
+        }
+
+        // --- INTERFACE DES COURS ---
+        function switchTab(tabId) {
+            document.getElementById('btn-tab-match').classList.remove('actif'); document.getElementById('btn-tab-class').classList.remove('actif');
+            document.getElementById('tab-match').classList.remove('actif'); document.getElementById('tab-class').classList.remove('actif');
+            document.getElementById(`btn-tab-${tabId}`).classList.add('actif'); document.getElementById(`tab-${tabId}`).classList.add('actif');
+            if (tabId === 'match') quitterLecon();
+        }
+
+        function lancerLecon(id) {
+            modeLecon = true;
+            document.getElementById('lesson-menu').style.display = "none"; document.getElementById('lesson-active-area').style.display = "flex";
+            let txt = id === 'principe' ? 
+                "<b>Le Chiffre Magique : 2 ou 3</b><br><br>Pour capturer les graines de votre adversaire, votre dernière graine semée doit atterrir dans son camp et amener le nombre total de graines de ce trou à exactement <b>2 ou 3</b>.<br><br>Si le trou contient 1 graine ou 4 graines après votre passage, vous ne gagnez rien. Tout l'art du jeu consiste à compter à l'avance pour viser le bon trou !" :
+                "<b>La Règle de Solidarité (Anti-Famine)</b><br><br>Si votre adversaire n'a plus du tout de graines dans son camp, vous n'avez pas le droit de le laisser mourir de faim.<br><br>Si l'un de vos coups permet de lui envoyer des graines pour qu'il puisse continuer à jouer, <b>vous êtes légalement obligé de choisir ce coup</b>. C'est une règle d'or philosophique de l'Awélé.";
+            document.getElementById('lesson-instructions').innerHTML = txt;
+            actualiserGraphique();
+        }
+
+        function quitterLecon() { modeLecon = false; document.getElementById('lesson-menu').style.display = "block"; document.getElementById('lesson-active-area').style.display = "none"; actualiserGraphique(); }
+
+        chargerDonnees();
+    </script>
+</body>
+</html>
