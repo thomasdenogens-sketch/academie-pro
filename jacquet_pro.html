@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jacquet Pro - Stratégie & Tradition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container {
+            max-width: 1100px; width: 100%;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 30px; border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 800; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #f59e0b; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 25px; justify-content: center; align-items: stretch; flex-wrap: wrap; margin-top: 10px; }
+
+        /* --- PLATEAU DE JACQUET --- */
+        .board-area { flex: 1; max-width: 700px; display: flex; flex-direction: column; align-items: center; }
+        
+        .dice-zone { display: flex; gap: 15px; align-items: center; height: 60px; margin-bottom: 10px; width: 100%; justify-content: center; }
+        .die { width: 45px; height: 45px; background: #f8fafc; color: #0f172a; font-weight: 900; font-size: 1.5rem; display: flex; justify-content: center; align-items: center; border-radius: 8px; border: 2px solid #94a3b8; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        #board { width: 100%; background: #0f172a; border: 8px solid #334155; border-radius: 8px; display: flex; flex-direction: column; padding: 10px; gap: 20px; }
+        .row { display: flex; height: 200px; }
+        .half-row { display: flex; flex: 1; gap: 2px; }
+        .bar { width: 40px; background: #1e293b; border-left: 2px solid #0f172a; border-right: 2px solid #0f172a; }
+        
+        .point-wrapper { flex: 1; position: relative; }
+        .triangle { width: 100%; height: 100%; position: absolute; top:0; left:0; }
+        .triangle-top { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+        .triangle-bottom { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+        .bg-even { background-color: #334155; }
+        .bg-odd { background-color: #475569; }
+
+        .checker-container { position: absolute; top:0; left:0; right:0; bottom:0; display: flex; align-items: center; z-index: 5; padding: 5px 0; }
+        .col-normal { flex-direction: column; }
+        .col-reverse { flex-direction: column-reverse; }
+
+        .checker { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.6); border: 3px solid; transition: 0.2s; cursor: pointer; position: relative; margin-bottom: -15px; }
+        .checker.p1 { background: #000000; border-color: #38bdf8; } /* Joueur 1 : Noir/Bleu */
+        .checker.p2 { background: #ffffff; border-color: #cbd5e1; } /* Joueur 2 : Blanc */
+        .checker.selected { box-shadow: 0 0 15px 5px #38bdf8; transform: scale(1.1); z-index: 10; }
+
+        .target-marker { width: 20px; height: 20px; background: #34d399; border-radius: 50%; margin: 10px; cursor: pointer; box-shadow: 0 0 10px #34d399; transition: 0.2s; }
+        .target-marker:hover { transform: scale(1.3); }
+
+        #action-bar { height: 50px; margin-top: 15px; display: flex; justify-content: center; align-items: center; }
+
+        /* --- PANNEAU LATÉRAL --- */
+        .side-panel { width: 300px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; display: flex; flex-direction: column; padding: 20px; }
+        .status-box { background: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px; text-align: center; }
+        #game-status { font-weight: 700; color: #38bdf8; font-size: 1.1rem; }
+        #info-postillon { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
+
+        .score-board { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .score-col { text-align: center; }
+        .score-txt { font-weight: 800; font-size: 1.5rem; font-family: 'Fira Code', monospace; margin-top: 5px; }
+        .c-p1 { color: #38bdf8; } .c-p2 { color: #cbd5e1; }
+
+        select, .btn-action { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; }
+        .btn-action:hover { background: #334155; }
+        .btn-roll { background: #f59e0b; color: #0f172a; border: none; font-size: 1.1rem; }
+        .btn-roll:hover { background: #d97706; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Jacquet Pro : Maîtrise & Probabilités</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div class="board-area">
+                <div class="dice-zone">
+                    <button class="btn-action btn-roll" id="btn-roll" onclick="lancerDes()">🎲 Lancer les dés</button>
+                    <div id="dice-display" style="display: flex; gap: 10px;"></div>
+                </div>
+
+                <div id="board">
+                    <div class="row" id="row-top">
+                        <div class="half-row" id="top-left"></div>
+                        <div class="bar"></div>
+                        <div class="half-row" id="top-right"></div>
+                    </div>
+                    <div class="row" id="row-bottom">
+                        <div class="half-row" id="bottom-left"></div>
+                        <div class="bar"></div>
+                        <div class="half-row" id="bottom-right"></div>
+                    </div>
+                </div>
+
+                <div id="action-bar"></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="status-box">
+                    <div id="game-status">Au tour de Noir (Vous)</div>
+                    <div id="info-postillon">Le premier pion (Postillon) doit atteindre le dernier quart !</div>
+                </div>
+
+                <div class="score-board">
+                    <div class="score-col c-p1">
+                        <div>SORTIS (Noir)</div><div class="score-txt" id="score-1">0</div>
+                    </div>
+                    <div class="score-col c-p2">
+                        <div>SORTIS (Blanc)</div><div class="score-txt" id="score-2">0</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: auto;">
+                    <label style="font-size: 0.85rem; color: #94a3b8; display:block; margin-bottom:5px;">Mode de jeu :</label>
+                    <select id="select-mode" onchange="initialiserJeu()">
+                        <option value="ia" selected>👤 1 Joueur (vs IA Entraînement)</option>
+                        <option value="local">👥 2 Joueurs (Famille - Sur cet écran)</option>
+                    </select>
+                    <button class="btn-action" onclick="initialiserJeu()">🔄 Relancer la partie</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DONNÉES CLOUD ---
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        let xpPro = 0;
+
+        // --- GÉNÉRATION DU PLATEAU HTML ---
+        const topRowL = document.getElementById('top-left'); const topRowR = document.getElementById('top-right');
+        const botRowL = document.getElementById('bottom-left'); const botRowR = document.getElementById('bottom-right');
+        
+        function createPointHTML(i, parent, isTop) {
+            let wrap = document.createElement('div'); wrap.className = 'point-wrapper';
+            let tri = document.createElement('div'); tri.className = `triangle ${isTop ? 'triangle-top' : 'triangle-bottom'} ${(i%2===0)?'bg-even':'bg-odd'}`;
+            let chkCont = document.createElement('div'); chkCont.className = `checker-container ${isTop ? 'col-normal' : 'col-reverse'}`;
+            chkCont.id = `pt-${i}`;
+            wrap.appendChild(tri); wrap.appendChild(chkCont); parent.appendChild(wrap);
+        }
+
+        for(let i=23; i>=18; i--) createPointHTML(i, topRowL, true);
+        for(let i=17; i>=12; i--) createPointHTML(i, topRowR, true);
+        for(let i=0; i<=5; i++) createPointHTML(i, botRowL, false);
+        for(let i=6; i<=11; i++) createPointHTML(i, botRowR, false);
+
+        // --- MOTEUR JACQUET ---
+        let board = [], borneOff = {1:0, 2:0}, currentPlayer = 1, dice = [], modeJeu = 'ia', tourBloque = false;
+        let selectedAbs = -1, validTargets = [];
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/jacquetPro.json`);
+                let data = await res.json();
+                xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            initialiserJeu();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points;
+            document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/jacquetPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        function initialiserJeu() {
+            modeJeu = document.getElementById('select-mode').value;
+            board = Array(24).fill(null).map(() => ({player: 0, count: 0}));
+            // Le Jacquet : Noir commence à 0, Blanc commence à 12
+            board[0] = {player: 1, count: 15};
+            board[12] = {player: 2, count: 15};
+            
+            borneOff = {1:0, 2:0}; currentPlayer = 1; dice = []; tourBloque = false; selectedAbs = -1; validTargets = [];
+            document.getElementById('score-1').textContent = 0; document.getElementById('score-2').textContent = 0;
+            document.getElementById('btn-roll').style.display = 'block';
+            document.getElementById('dice-display').innerHTML = '';
+            document.getElementById('game-status').textContent = "C'est parti ! À Noir de lancer les dés.";
+            document.getElementById('game-status').style.color = "#38bdf8";
+            
+            afficherPlateau();
+        }
+
+        // --- LOGIQUE DE POSITIONNEMENT (Chemins croisés) ---
+        function getRel(player, abs) { return player === 1 ? abs : (abs + 12) % 24; }
+        function getAbs(player, rel) { return player === 1 ? rel : (rel + 12) % 24; }
+        function getPlayerPieces(player) {
+            let pieces = [];
+            for(let i=0; i<24; i++) if(board[i].player === player) pieces.push({abs: i, count: board[i].count});
+            return pieces;
+        }
+
+        // --- RÈGLES DES DÉPLACEMENTS (Postillon inclus) ---
+        function getValidMoves(relPos, diceArray) {
+            let pieces = getPlayerPieces(currentPlayer);
+            let maxRel = -1;
+            pieces.forEach(p => { let r = getRel(currentPlayer, p.abs); if(r > maxRel) maxRel = r; });
+            
+            // LA RÈGLE DU POSTILLON : Le premier pion doit atteindre le dernier quart (position relative 18+)
+            document.getElementById('info-postillon').style.display = (maxRel < 18) ? "block" : "none";
+            if (maxRel < 18 && relPos !== maxRel) return []; 
+            
+            let targets = [];
+            let uniqueDice = [...new Set(diceArray)]; // Pour éviter les doublons si on a fait un double
+            
+            uniqueDice.forEach(d => {
+                let tr = relPos + d;
+                if (tr < 24) {
+                    let ta = getAbs(currentPlayer, tr);
+                    // Règle de blocage Jacquet : Impossible d'aller sur une case contenant un pion adverse
+                    if (board[ta].player === 0 || board[ta].player === currentPlayer) targets.push({abs: ta, die: d});
+                } else {
+                    // Sortie (Bear off) : Seulement si TOUS les pions sont dans le dernier quart
+                    let allHome = pieces.every(p => getRel(currentPlayer, p.abs) >= 18);
+                    if (allHome) targets.push({abs: 24, die: d});
+                }
+            });
+            return targets;
+        }
+
+        // --- INTERFACE VISUELLE ---
+        function afficherPlateau() {
+            for(let i=0; i<24; i++) {
+                let ptDiv = document.getElementById(`pt-${i}`);
+                ptDiv.innerHTML = '';
+                
+                let count = board[i].count;
+                for(let c=0; c<count; c++) {
+                    let chk = document.createElement('div');
+                    chk.className = `checker ${board[i].player === 1 ? 'p1' : 'p2'}`;
+                    if (i === selectedAbs && c === count - 1) chk.classList.add('selected');
+                    chk.onclick = (e) => { e.stopPropagation(); selectPoint(i); };
+                    ptDiv.appendChild(chk);
+                }
+
+                // Cibles de déplacement
+                if (validTargets.some(t => t.abs === i)) {
+                    let targetInfo = validTargets.find(t => t.abs === i);
+                    let marker = document.createElement('div');
+                    marker.className = 'target-marker';
+                    marker.onclick = (e) => { e.stopPropagation(); executeMove(selectedAbs, i, targetInfo.die); };
+                    ptDiv.appendChild(marker);
+                }
+            }
+
+            // Bouton pour sortir les pions du plateau
+            let actionBar = document.getElementById('action-bar');
+            actionBar.innerHTML = '';
+            if (validTargets.some(t => t.abs === 24)) {
+                let targetInfo = validTargets.find(t => t.abs === 24);
+                let btn = document.createElement('button');
+                btn.className = "btn-action";
+                btn.style.background = "#10b981"; btn.style.color = "#0f172a"; btn.style.width = "auto";
+                btn.innerHTML = "⬆️ Sortir ce pion (" + targetInfo.die + ")";
+                btn.onclick = () => executeMove(selectedAbs, 24, targetInfo.die);
+                actionBar.appendChild(btn);
+            }
+        }
+
+        function lancerDes() {
+            if(dice.length > 0 || tourBloque) return;
+            let d1 = Math.floor(Math.random()*6)+1;
+            let d2 = Math.floor(Math.random()*6)+1;
+            dice = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
+            
+            document.getElementById('btn-roll').style.display = 'none';
+            let disp = document.getElementById('dice-display');
+            disp.innerHTML = '';
+            dice.forEach(d => { let div = document.createElement('div'); div.className='die'; div.textContent=d; disp.appendChild(div); });
+            
+            checkIfBlocked();
+        }
+
+        function selectPoint(absPos) {
+            if (tourBloque || dice.length === 0) return;
+            if (board[absPos].player !== currentPlayer) return;
+            
+            selectedAbs = absPos;
+            let relPos = getRel(currentPlayer, absPos);
+            validTargets = getValidMoves(relPos, dice);
+            afficherPlateau();
+        }
+
+        function executeMove(fromAbs, toAbs, dieUsed) {
+            board[fromAbs].count--;
+            if (board[fromAbs].count === 0) board[fromAbs].player = 0;
+            
+            if (toAbs === 24) {
+                borneOff[currentPlayer]++;
+                document.getElementById(`score-${currentPlayer}`).textContent = borneOff[currentPlayer];
+                if(borneOff[currentPlayer] === 15) {
+                    document.getElementById('game-status').textContent = `🏆 VICTOIRE DE ${currentPlayer === 1 ? 'NOIR' : 'BLANC'} !`;
+                    if(modeJeu === 'ia' && currentPlayer === 1) sauverXP(30);
+                    tourBloque = true; document.getElementById('action-bar').innerHTML = ''; return;
+                }
+            } else {
+                board[toAbs].player = currentPlayer;
+                board[toAbs].count++;
+            }
+            
+            let idx = dice.indexOf(dieUsed);
+            if (idx > -1) dice.splice(idx, 1);
+            
+            // Mise à jour de l'affichage des dés
+            let disp = document.getElementById('dice-display'); disp.innerHTML = '';
+            dice.forEach(d => { let div = document.createElement('div'); div.className='die'; div.textContent=d; disp.appendChild(div); });
+
+            selectedAbs = -1; validTargets = [];
+            afficherPlateau();
+
+            if (dice.length === 0) setTimeout(finDeTour, 500);
+            else checkIfBlocked();
+        }
+
+        function checkIfBlocked() {
+            let pieces = getPlayerPieces(currentPlayer);
+            let canMove = false;
+            for(let p of pieces) {
+                if(getValidMoves(getRel(currentPlayer, p.abs), dice).length > 0) { canMove = true; break; }
+            }
+            if(!canMove) {
+                document.getElementById('game-status').textContent = "⚠️ Mouvements bloqués ! Fin du tour.";
+                document.getElementById('game-status').style.color = "#f87171";
+                dice = []; setTimeout(finDeTour, 2000);
+            }
+        }
+
+        function finDeTour() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            document.getElementById('btn-roll').style.display = 'block';
+            document.getElementById('dice-display').innerHTML = '';
+            
+            let nom = currentPlayer === 1 ? "Noir (Vous)" : (modeJeu === 'ia' ? "Blanc (IA)" : "Blanc (Joueur 2)");
+            let col = currentPlayer === 1 ? "#38bdf8" : "#cbd5e1";
+            document.getElementById('game-status').textContent = `Au tour de ${nom}.`;
+            document.getElementById('game-status').style.color = col;
+            
+            afficherPlateau();
+
+            if(modeJeu === 'ia' && currentPlayer === 2) {
+                tourBloque = true; document.getElementById('btn-roll').style.display = 'none';
+                setTimeout(playIA, 800);
+            } else { tourBloque = false; }
+        }
+
+        // --- INTELLIGENCE ARTIFICIELLE ---
+        function playIA() {
+            if (dice.length === 0) {
+                let d1 = Math.floor(Math.random()*6)+1; let d2 = Math.floor(Math.random()*6)+1;
+                dice = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
+                let disp = document.getElementById('dice-display'); disp.innerHTML = '';
+                dice.forEach(d => { let div = document.createElement('div'); div.className='die'; div.textContent=d; disp.appendChild(div); });
+            }
+
+            function doIAMove() {
+                if(dice.length === 0) { finDeTour(); return; }
+                
+                let allMoves = [];
+                let pieces = getPlayerPieces(2);
+                let maxRel = -1;
+                pieces.forEach(p => { let r = getRel(2, p.abs); if(r > maxRel) maxRel = r; });
+
+                pieces.forEach(p => {
+                    let rel = getRel(2, p.abs);
+                    if(maxRel >= 18 || rel === maxRel) {
+                        let moves = getValidMoves(rel, dice);
+                        moves.forEach(m => allMoves.push({from: p.abs, to: m.abs, die: m.die}));
+                    }
+                });
+
+                if (allMoves.length === 0) { dice = []; finDeTour(); return; }
+
+                // L'IA choisit de sortir ses pions en priorité, sinon elle prend un coup au hasard
+                let bestMove = allMoves.find(m => m.to === 24) || allMoves[Math.floor(Math.random() * allMoves.length)];
+                executeMove(bestMove.from, bestMove.to, bestMove.die);
+
+                if (dice.length > 0 && borneOff[2] < 15) setTimeout(doIAMove, 800);
+            }
+            setTimeout(doIAMove, 1000);
+        }
+
+        chargerDonnees();
+    </script>
+</body>
+</html>
