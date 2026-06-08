@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Dactylographie</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #94a3b8; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; margin: 0; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
+        .btn-retour:hover { background: #475569; }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            font-family: 'Fira Code', monospace;
+            font-size: 1.5rem;
+            color: #38bdf8;
+        }
+
+        .typing-area {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.8rem;
+            line-height: 1.6;
+            color: #64748b;
+            position: relative;
+            outline: none;
+            letter-spacing: 2px;
+        }
+
+        /* États des lettres */
+        .lettre { position: relative; }
+        .lettre.correcte { color: #4ade80; } /* Vert */
+        .lettre.fausse { color: #f87171; background: rgba(248, 113, 113, 0.2); border-radius: 3px; } /* Rouge */
+        
+        /* Curseur EdClub style */
+        .lettre.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 3px;
+            background-color: #38bdf8;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .controles { margin-top: 30px; display: flex; gap: 15px; }
+        select, button {
+            background: #0f172a; color: #e2e8f0; border: 1px solid #334155;
+            padding: 10px 20px; border-radius: 6px; font-size: 1rem; cursor: pointer;
+        }
+        button:hover { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+        /* Input caché pour capter la frappe sur mobile/tablette si besoin */
+        #hidden-input { position: absolute; opacity: 0; pointer-events: none; }
+        
+        #resultat-cloud { margin-top: 15px; color: #4ade80; font-weight: bold; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Master Dactylographie</h1>
+            <a href="index.html" class="btn-retour">← Tableau de Bord</a>
+        </div>
+
+        <div class="stats-bar">
+            <div id="affichage-wpm">0 MPM</div>
+            <div id="affichage-acc">100% Précision</div>
+            <div id="affichage-temps">0s</div>
+        </div>
+
+        <div class="typing-area" id="zone-texte" tabindex="0">
+            </div>
+        <input type="text" id="hidden-input">
+
+        <div class="controles">
+            <select id="choix-niveau">
+                <option value="0">Niveau 1 : Touches de base (fj dk sl a;)</option>
+                <option value="1">Niveau 2 : Mots fréquents courts</option>
+                <option value="2">Niveau 3 : Phrases complexes (Ponctuation)</option>
+            </select>
+            <button onclick="lancerExercice()">🔄 Relancer</button>
+        </div>
+        
+        <div id="resultat-cloud"></div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        
+        const exercices = [
+            "ff jj fj jf dd kk dk kd ss ll sl ls aa ;; a; ;a fdsa jkl;", // Base
+            "le la les un une des dans pour par sur avec sans sous", // Mots courts
+            "La dactylographie est l'action de saisir un texte sur un clavier. Pour être efficace, il faut utiliser ses dix doigts sans regarder les touches." // Phrases
+        ];
+
+        let texteActuel = "";
+        let indexFrappe = 0;
+        let fautes = 0;
+        let tempsDebut = null;
+        let timer = null;
+        let partieFinie = false;
+        let recordActuel = 0;
+
+        // Récupérer le record cloud au chargement
+        async function chargerRecord() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/dactyloPro.json`);
+                let data = await res.json();
+                if(data && data.wpm) recordActuel = data.wpm;
+            } catch(e) {}
+        }
+        chargerRecord();
+
+        function lancerExercice() {
+            let niv = document.getElementById('choix-niveau').value;
+            texteActuel = exercices[niv];
+            indexFrappe = 0; fautes = 0; tempsDebut = null; partieFinie = false;
+            clearInterval(timer);
+            
+            document.getElementById('affichage-wpm').textContent = "0 MPM";
+            document.getElementById('affichage-acc').textContent = "100% Précision";
+            document.getElementById('affichage-temps').textContent = "0s";
+            document.getElementById('resultat-cloud').textContent = "";
+
+            const zone = document.getElementById('zone-texte');
+            zone.innerHTML = "";
+            
+            // Transformer le texte en spans
+            for(let i=0; i<texteActuel.length; i++) {
+                let span = document.createElement('span');
+                span.textContent = texteActuel[i];
+                span.className = 'lettre';
+                if(i === 0) span.classList.add('active');
+                zone.appendChild(span);
+            }
+            
+            document.getElementById('hidden-input').value = "";
+            document.getElementById('hidden-input').focus();
+            zone.focus();
+        }
+
+        function demarrerTimer() {
+            if(!tempsDebut) {
+                tempsDebut = new Date();
+                timer = setInterval(() => {
+                    let s = Math.floor((new Date() - tempsDebut)/1000);
+                    document.getElementById('affichage-temps').textContent = s + "s";
+                }, 1000);
+            }
+        }
+
+        // Écoute de la frappe
+        document.addEventListener('keydown', (e) => {
+            if(partieFinie) return;
+            
+            // Ignorer les touches de contrôle (Shift, Alt, etc.)
+            if(e.key.length !== 1 && e.key !== 'Backspace') return;
+            
+            demarrerTimer();
+            let spans = document.querySelectorAll('.lettre');
+
+            if(e.key === 'Backspace') {
+                if(indexFrappe > 0) {
+                    spans[indexFrappe].classList.remove('active');
+                    indexFrappe--;
+                    spans[indexFrappe].classList.remove('correcte', 'fausse');
+                    spans[indexFrappe].classList.add('active');
+                }
+                return;
+            }
+
+            // Vérification de la touche frappée
+            let caractereAttendu = texteActuel[indexFrappe];
+            
+            if(e.key === caractereAttendu) {
+                spans[indexFrappe].classList.add('correcte');
+            } else {
+                spans[indexFrappe].classList.add('fausse');
+                fautes++;
+            }
+
+            spans[indexFrappe].classList.remove('active');
+            indexFrappe++;
+
+            // Calculs Temps Réel
+            let totalTapes = indexFrappe;
+            let precision = Math.max(0, Math.floor(((totalTapes - fautes) / totalTapes) * 100)) || 100;
+            
+            let tempsMinutes = (new Date() - tempsDebut) / 60000;
+            // MPM = (Caractères / 5) / Minutes
+            let motsParMinute = tempsMinutes > 0 ? Math.floor((totalTapes / 5) / tempsMinutes) : 0;
+
+            document.getElementById('affichage-acc').textContent = precision + "% Précision";
+            document.getElementById('affichage-wpm').textContent = motsParMinute + " MPM";
+
+            if(indexFrappe >= texteActuel.length) {
+                terminerPartie(motsParMinute, precision);
+            } else {
+                spans[indexFrappe].classList.add('active');
+            }
+        });
+
+        async function terminerPartie(wpm, acc) {
+            partieFinie = true;
+            clearInterval(timer);
+            
+            if(wpm > recordActuel) {
+                document.getElementById('resultat-cloud').textContent = `🚀 Nouveau Record Cloud : ${wpm} MPM ! Sauvegarde en cours...`;
+                
+                // Envoi Firebase
+                try {
+                    await fetch(`${FIREBASE_URL}scores/parent/dactyloPro.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ wpm: wpm, acc: acc })
+                    });
+                    document.getElementById('resultat-cloud').textContent = `✅ Enregistré dans le Cloud !`;
+                    recordActuel = wpm;
+                } catch(err) {
+                    console.error("Erreur sauvegarde", err);
+                }
+            } else {
+                document.getElementById('resultat-cloud').textContent = `Fin ! Votre record actuel est de ${recordActuel} MPM.`;
+            }
+        }
+
+        // Lancement initial
+        window.onload = lancerExercice;
+    </script>
+</body>
+</html>

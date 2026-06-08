@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Hub Productivité & Entraînement</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; /* Slate très sombre */
+            color: #e2e8f0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 40px 20px; 
+        }
+        
+        #dashboard {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 50px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 20px;
+        }
+
+        h1 { font-size: 2.5rem; font-weight: 700; color: #f8fafc; letter-spacing: -1px; }
+        .subtitle { color: #94a3b8; font-size: 1.1rem; font-weight: 300; }
+        
+        .stat-badge {
+            background: #1e293b;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #38bdf8; /* Accent bleu clair */
+        }
+
+        .grid-apps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .app-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 30px;
+            text-decoration: none;
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            border-color: #38bdf8;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1);
+        }
+
+        .app-icon { font-size: 2.5rem; margin-bottom: 15px; }
+        .app-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
+        .app-desc { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px; flex-grow: 1; }
+        
+        .app-stats {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            font-family: monospace;
+            display: flex;
+            justify-content: space-between;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="dashboard">
+        <div class="header">
+            <div>
+                <h1>Espace Personnel</h1>
+                <p class="subtitle">Entraînement cognitif & Compétences techniques</p>
+            </div>
+            <div class="stat-badge" id="total-xp">XP: ...</div>
+        </div>
+
+        <div class="grid-apps">
+            <a href="dactylo_pro.html" class="app-card">
+                <div class="app-icon">⌨️</div>
+                <div class="app-title">Master Dactylographie</div>
+                <div class="app-desc">Améliorez votre vitesse de frappe (MPM) et votre précision avec des exercices progressifs inspirés d'EdClub.</div>
+                <div class="app-stats">
+                    <span id="stat-dactylo-wpm">Record: -- MPM</span>
+                    <span id="stat-dactylo-acc">Prc: --%</span>
+                </div>
+            </a>
+
+            <a href="echecs_pro.html" class="app-card">
+                <div class="app-icon">♞</div>
+                <div class="app-title">Échecs : Analyse Pro</div>
+                <div class="app-desc">Affrontez le moteur Stockfish à haut niveau. Mode analyse, ouvertures complexes et évaluation en temps réel.</div>
+                <div class="app-stats">
+                    <span id="stat-echecs-xp">XP: --</span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // MÊME BASE DE DONNÉES QUE LES ENFANTS
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        
+        async function chargerStatsPro() {
+            try {
+                // On crée une branche "parent" dans la base de données
+                let res = await fetch(`${FIREBASE_URL}scores/parent.json`);
+                let data = await res.json() || {};
+
+                let xpEchecs = data.echecsPro ? (data.echecsPro.xp || 0) : 0;
+                let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
+                let dactyloAcc = data.dactyloPro ? (data.dactyloPro.acc || 0) : 0;
+
+                let totalXp = xpEchecs + (dactyloRecord * 10); // Calcul d'XP global
+
+                document.getElementById('total-xp').textContent = `XP: ${totalXp}`;
+                document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
+                document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
+                document.getElementById('stat-dactylo-acc').textContent = `Prc: ${dactyloAcc}%`;
+
+            } catch(e) {
+                console.error("Erreur de connexion Firebase", e);
+            }
+        }
+
+        chargerStatsPro();
+    </script>
+</body>
+</html>
