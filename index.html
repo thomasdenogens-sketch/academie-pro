@@ -10,7 +10,7 @@
         
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; /* Slate très sombre */
+            background-color: #0f172a; 
             color: #e2e8f0; 
             display: flex; 
             flex-direction: column; 
@@ -43,7 +43,7 @@
             border: 1px solid #334155;
             font-size: 1.2rem;
             font-weight: 700;
-            color: #38bdf8; /* Accent bleu clair */
+            color: #38bdf8; 
         }
 
         .grid-apps {
@@ -119,6 +119,15 @@
                     <span id="stat-echecs-xp">XP: --</span>
                 </div>
             </a>
+
+            <a href="othello_pro.html" class="app-card">
+                <div class="app-icon">⚪⚫</div>
+                <div class="app-title">Othello : Master</div>
+                <div class="app-desc">Entraînez-vous à anticiper les coups et à contrôler les coins. Jouable en solo contre l'IA ou à deux sur le même écran.</div>
+                <div class="app-stats">
+                    <span id="stat-othello-xp">XP: --</span>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -128,18 +137,22 @@
         
         async function chargerStatsPro() {
             try {
-                // On crée une branche "parent" dans la base de données
+                // On va chercher vos données dans le tiroir "parent"
                 let res = await fetch(`${FIREBASE_URL}scores/parent.json`);
                 let data = await res.json() || {};
 
                 let xpEchecs = data.echecsPro ? (data.echecsPro.xp || 0) : 0;
+                let xpOthello = data.othelloPro ? (data.othelloPro.xp || 0) : 0; // Ajout d'Othello ici !
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
                 let dactyloAcc = data.dactyloPro ? (data.dactyloPro.acc || 0) : 0;
 
-                let totalXp = xpEchecs + (dactyloRecord * 10); // Calcul d'XP global
+                // On additionne tout (on donne 10 XP par Mots Par Minute pour la Dactylo)
+                let totalXp = xpEchecs + xpOthello + (dactyloRecord * 10);
 
-                document.getElementById('total-xp').textContent = `XP: ${totalXp}`;
+                // On affiche les textes dans les bonnes cases
+                document.getElementById('total-xp').textContent = `XP Globale: ${totalXp}`;
                 document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
+                document.getElementById('stat-othello-xp').textContent = `XP: ${xpOthello}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
                 document.getElementById('stat-dactylo-acc').textContent = `Prc: ${dactyloAcc}%`;
 
