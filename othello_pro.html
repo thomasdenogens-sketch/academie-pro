@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Othello Pro - Stratégie & IA</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container {
+            max-width: 1050px; width: 100%;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 30px; border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 800; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #10b981; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 25px; justify-content: center; align-items: stretch; flex-wrap: wrap; margin-top: 10px; }
+
+        /* Échiquier Othello */
+        #board-container { width: 100%; max-width: 440px; }
+        #board { 
+            display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); 
+            width: 100%; aspect-ratio: 1; background: #0f172a; border: 6px solid #334155; border-radius: 8px; gap: 2px; padding: 2px;
+        }
+        
+        .case { background-color: #10b981; border-radius: 2px; display: flex; justify-content: center; align-items: center; cursor: pointer; position: relative; }
+        
+        /* Les Pions (Disques) avec animation 3D */
+        .disc {
+            width: 85%; height: 85%; border-radius: 50%;
+            transition: transform 0.4s ease-in-out, background-color 0.4s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.2);
+        }
+        .disc.noir { background-color: #1e293b; transform: rotateY(0deg); border: 2px solid #0f172a; }
+        .disc.blanc { background-color: #f8fafc; transform: rotateY(180deg); border: 2px solid #cbd5e1; }
+        
+        /* Indicateurs de coups valides */
+        .case.valide::after { content: ''; position: absolute; width: 25%; height: 25%; background: rgba(0, 0, 0, 0.2); border-radius: 50%; }
+        .case.tuto-vert { background-color: #34d399 !important; }
+        .case.tuto-rouge { background-color: #ef4444 !important; }
+
+        /* Panneau Latéral */
+        .side-panel {
+            flex: 1; min-width: 300px; max-width: 350px; height: 440px;
+            background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .panel-tabs { display: flex; border-bottom: 1px solid #334155; }
+        .ptab { flex: 1; background: #1e293b; color: #94a3b8; border: none; padding: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .ptab.actif { background: #0f172a; color: #10b981; border-bottom: 2px solid #10b981; }
+        .ptab:hover:not(.actif) { background: #334155; color: #e2e8f0; }
+
+        .tab-content { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; }
+        .tab-content.actif { display: flex; }
+
+        /* Scoreboard et Status */
+        .score-board { display: flex; justify-content: space-around; margin-bottom: 15px; background: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+        .score-col { display: flex; flex-direction: column; align-items: center; }
+        .score-disc { width: 30px; height: 30px; border-radius: 50%; margin-bottom: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .score-disc.noir { background: #1e293b; border: 2px solid #0f172a; }
+        .score-disc.blanc { background: #f8fafc; border: 2px solid #cbd5e1; }
+        .score-txt { font-weight: 800; font-size: 1.5rem; font-family: 'Fira Code', monospace; }
+        
+        #game-status { font-weight: 700; color: #10b981; font-size: 1.1rem; text-align: center; margin: 10px 0; }
+
+        /* Contrôles */
+        .controls-box { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+        select, .btn-action { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-action:hover { background: #334155; }
+
+        /* Masterclass */
+        .lecon-card { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .lecon-card:hover { border-color: #10b981; }
+        .lecon-card h4 { color: #f8fafc; margin-bottom: 5px; }
+        .lecon-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; }
+        #lesson-active-area { display: none; flex-direction: column; height: 100%; }
+        #lesson-title { color: #10b981; font-size: 1.2rem; font-weight: 800; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px;}
+        #lesson-instructions { background: #1e293b; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; color: #e2e8f0; line-height: 1.5; font-size: 0.95rem; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Othello Pro : Tactique & Maîtrise</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div id="board-container">
+                <div id="board"></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="ptab actif" onclick="switchTab('match')" id="btn-tab-match">🎮 Jouer</button>
+                    <button class="ptab" onclick="switchTab('class')" id="btn-tab-class">🎓 Masterclass</button>
+                </div>
+
+                <div id="tab-match" class="tab-content actif">
+                    <div class="score-board">
+                        <div class="score-col">
+                            <div class="score-disc noir"></div>
+                            <div class="score-txt" id="score-noir">2</div>
+                        </div>
+                        <div class="score-col">
+                            <div class="score-disc blanc"></div>
+                            <div class="score-txt" id="score-blanc">2</div>
+                        </div>
+                    </div>
+                    
+                    <div id="game-status">Au tour de Noir (Vous)</div>
+
+                    <div class="controls-box">
+                        <label style="font-size: 0.85rem; color: #94a3b8;">Mode de jeu :</label>
+                        <select id="select-mode" onchange="initialiserJeu()">
+                            <option value="ia2" selected>👤 1 Joueur (vs IA Club)</option>
+                            <option value="ia3">👤 1 Joueur (vs IA Expert)</option>
+                            <option value="ia1">👤 1 Joueur (vs IA Hasard)</option>
+                            <option value="humain">👥 2 Joueurs (Local)</option>
+                        </select>
+                        <button class="btn-action" onclick="initialiserJeu()">🔄 Relancer la partie</button>
+                        <a href="index.html" class="btn-retour" style="text-align: center;">Dashboard Pro</a>
+                    </div>
+                </div>
+
+                <div id="tab-class" class="tab-content">
+                    <div id="lesson-menu">
+                        <h3 style="margin-bottom: 15px; color:#cbd5e1; font-size: 1rem;">Les Fondations</h3>
+                        <div class="lecon-card" onclick="lancerLecon('coins')">
+                            <h4>1. La règle d'Or : Les Coins</h4><p>Pourquoi les coins sont-ils indestructibles ?</p>
+                        </div>
+                        <div class="lecon-card" onclick="lancerLecon('danger')">
+                            <h4>2. La Zone de Mort (Cases X)</h4><p>L'erreur de débutant à éviter absolument.</p>
+                        </div>
+                    </div>
+
+                    <div id="lesson-active-area">
+                        <div id="lesson-title">Titre</div>
+                        <div id="lesson-instructions">...</div>
+                        <button class="btn-action" onclick="quitterLecon()" style="margin-top: auto;">❌ Quitter la leçon</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        let xpPro = 0;
+
+        // --- MOTEUR OTHELLO ---
+        const NOIR = 1, BLANC = 2, VIDE = 0;
+        const DIRECTIONS = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+        
+        // Matrice stratégique pour l'IA (Poids des cases : Coins très forts, Cases X très mauvaises)
+        const POIDS_IA = [
+            [ 120, -20,  20,   5,   5,  20, -20,  120],
+            [ -20, -40,  -5,  -5,  -5,  -5, -40,  -20],
+            [  20,  -5,  15,   3,   3,  15,  -5,   20],
+            [   5,  -5,   3,   3,   3,   3,  -5,    5],
+            [   5,  -5,   3,   3,   3,   3,  -5,    5],
+            [  20,  -5,  15,   3,   3,  15,  -5,   20],
+            [ -20, -40,  -5,  -5,  -5,  -5, -40,  -20],
+            [ 120, -20,  20,   5,   5,  20, -20,  120]
+        ];
+
+        let plateau = [], joueurActuel = NOIR, modeJeu = 'ia2', coupsPossibles = [], tourBloque = false;
+        let modeLecon = false;
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/othelloPro.json`);
+                let data = await res.json();
+                xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            initialiserJeu();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points;
+            document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/othelloPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        function initialiserJeu() {
+            modeJeu = document.getElementById('select-mode').value;
+            plateau = Array(8).fill().map(() => Array(8).fill(VIDE));
+            plateau[3][3] = BLANC; plateau[3][4] = NOIR;
+            plateau[4][3] = NOIR; plateau[4][4] = BLANC;
+            
+            joueurActuel = NOIR; tourBloque = false; modeLecon = false;
+            calculerCoupsPossibles(); afficherPlateau(); majScores();
+        }
+
+        function calculerCoupsPossibles() {
+            coupsPossibles = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(plateau[r][c] === VIDE && listerDisquesARetourner(r, c, joueurActuel).length > 0) {
+                        coupsPossibles.push({r, c});
+                    }
+                }
+            }
+        }
+
+        function listerDisquesARetourner(r, c, joueur) {
+            let aRetourner = [];
+            let adversaire = joueur === NOIR ? BLANC : NOIR;
+
+            for(let dir of DIRECTIONS) {
+                let temp = [];
+                let nr = r + dir[0], nc = c + dir[1];
+                while(nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && plateau[nr][nc] === adversaire) {
+                    temp.push({r: nr, c: nc});
+                    nr += dir[0]; nc += dir[1];
+                }
+                if(nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && plateau[nr][nc] === joueur && temp.length > 0) {
+                    aRetourner = aRetourner.concat(temp);
+                }
+            }
+            return aRetourner;
+        }
+
+        function afficherPlateau() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+            
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    let caseDiv = document.createElement('div');
+                    caseDiv.className = 'case';
+                    
+                    if(plateau[r][c] !== VIDE) {
+                        let disc = document.createElement('div');
+                        disc.className = `disc ${plateau[r][c] === NOIR ? 'noir' : 'blanc'}`;
+                        caseDiv.appendChild(disc);
+                    } else if(!tourBloque && !modeLecon) {
+                        if(coupsPossibles.some(m => m.r === r && m.c === c)) caseDiv.classList.add('valide');
+                    }
+
+                    // Tutos Masterclass
+                    if(modeLecon) {
+                        if(leconEnCours === 'coins' && (r===0||r===7) && (c===0||c===7)) caseDiv.classList.add('tuto-vert');
+                        if(leconEnCours === 'danger' && ((r===1&&(c===0||c===1||c===6||c===7)) || (r===6&&(c===0||c===1||c===6||c===7)) || (r===0&&(c===1||c===6)) || (r===7&&(c===1||c===6)))) caseDiv.classList.add('tuto-rouge');
+                    }
+
+                    caseDiv.onclick = () => jouerCoup(r, c);
+                    boardDiv.appendChild(caseDiv);
+                }
+            }
+        }
+
+        function jouerCoup(r, c) {
+            if(tourBloque || modeLecon) return;
+            let disques = listerDisquesARetourner(r, c, joueurActuel);
+            
+            if(disques.length === 0) return; // Coup invalide
+
+            // On pose et on retourne
+            plateau[r][c] = joueurActuel;
+            disques.forEach(d => plateau[d.r][d.c] = joueurActuel);
+            
+            majScores();
+            finDeTour();
+        }
+
+        function finDeTour() {
+            joueurActuel = joueurActuel === NOIR ? BLANC : NOIR;
+            calculerCoupsPossibles();
+
+            if(coupsPossibles.length === 0) {
+                // Le joueur doit passer son tour
+                joueurActuel = joueurActuel === NOIR ? BLANC : NOIR;
+                calculerCoupsPossibles();
+                
+                if(coupsPossibles.length === 0) {
+                    // Fin de partie
+                    terminerPartie();
+                    return;
+                } else {
+                    document.getElementById('game-status').textContent = `Passage de tour forcé ! À ${joueurActuel === NOIR ? 'Noir' : 'Blanc'} de jouer.`;
+                }
+            } else {
+                document.getElementById('game-status').textContent = `Au tour de ${joueurActuel === NOIR ? 'Noir' : 'Blanc'}`;
+                document.getElementById('game-status').style.color = joueurActuel === NOIR ? "#cbd5e1" : "#f8fafc";
+            }
+
+            afficherPlateau();
+
+            // Lancement IA si c'est son tour
+            if(modeJeu.startsWith('ia') && joueurActuel === BLANC) {
+                tourBloque = true;
+                document.getElementById('game-status').textContent = "L'ordinateur réfléchit... 🤖";
+                setTimeout(jouerIA, 800);
+            } else {
+                tourBloque = false;
+            }
+        }
+
+        function jouerIA() {
+            if(coupsPossibles.length === 0) return finDeTour();
+
+            let meilleurCoup;
+            if(modeJeu === 'ia1') { // Hasard
+                meilleurCoup = coupsPossibles[Math.floor(Math.random() * coupsPossibles.length)];
+            } else { // Niveau 2 (Club) ou 3 (Expert) - Évaluation de la matrice
+                let meilleurScore = -9999;
+                for(let coup of coupsPossibles) {
+                    let score = POIDS_IA[coup.r][coup.c];
+                    if(modeJeu === 'ia3') {
+                        // Bonus si le coup retourne beaucoup de pions (uniquement en expert)
+                        score += listerDisquesARetourner(coup.r, coup.c, BLANC).length * 2;
+                    }
+                    if(score > meilleurScore) { meilleurScore = score; meilleurCoup = coup; }
+                }
+            }
+            
+            plateau[meilleurCoup.r][meilleurCoup.c] = BLANC;
+            let disques = listerDisquesARetourner(meilleurCoup.r, meilleurCoup.c, BLANC);
+            disques.forEach(d => plateau[d.r][d.c] = BLANC);
+            
+            majScores(); finDeTour();
+        }
+
+        function majScores() {
+            let n = 0, b = 0;
+            for(let r=0; r<8; r++) for(let c=0; c<8; c++) { if(plateau[r][c]===NOIR) n++; else if(plateau[r][c]===BLANC) b++; }
+            document.getElementById('score-noir').textContent = n;
+            document.getElementById('score-blanc').textContent = b;
+            return {n, b};
+        }
+
+        function terminerPartie() {
+            tourBloque = true;
+            let scores = majScores();
+            let status = document.getElementById('game-status');
+            if(scores.n > scores.b) {
+                status.textContent = "🏆 Victoire de NOIR !"; status.style.color = "#10b981";
+                if(modeJeu.startsWith('ia')) sauverXP(20);
+            } else if (scores.b > scores.n) {
+                status.textContent = modeJeu.startsWith('ia') ? "💀 Défaite... L'IA gagne." : "🏆 Victoire de BLANC !";
+                status.style.color = "#ef4444";
+            } else {
+                status.textContent = "🤝 Égalité parfaite !";
+            }
+        }
+
+        // --- MASTERCLASS (COURS) ---
+        let leconEnCours = null;
+        function switchTab(tabId) {
+            document.getElementById('btn-tab-match').classList.remove('actif'); document.getElementById('btn-tab-class').classList.remove('actif');
+            document.getElementById('tab-match').classList.remove('actif'); document.getElementById('tab-class').classList.remove('actif');
+            document.getElementById(`btn-tab-${tabId}`).classList.add('actif'); document.getElementById(`tab-${tabId}`).classList.add('actif');
+            if (tabId === 'match') quitterLecon();
+        }
+
+        function lancerLecon(id) {
+            modeLecon = true; leconEnCours = id;
+            document.getElementById('lesson-menu').style.display = "none"; document.getElementById('lesson-active-area').style.display = "flex";
+            
+            let titre, texte;
+            if(id === 'coins') {
+                titre = "1. La Règle d'Or (Les Coins)";
+                texte = "Regardez les cases <b>vertes</b> sur le plateau. Ce sont les 4 coins.<br><br>À Othello, un pion placé dans un coin ne pourra <b>JAMAIS</b> être retourné par l'adversaire (car il ne peut pas être encadré).<br><br>👉 Votre priorité absolue pendant une partie est de capturer ces coins.";
+            } else {
+                titre = "2. La Zone de Mort (Cases X)";
+                texte = "Regardez les cases <b>rouges</b>. Elles sont situées juste à côté des coins.<br><br>Si vous posez un pion ici, vous offrez à l'adversaire l'opportunité de s'appuyer sur votre pion pour capturer le coin au tour suivant !<br><br>👉 Ne jouez <b>JAMAIS</b> sur ces cases, sauf si vous y êtes absolument obligé.";
+            }
+            document.getElementById('lesson-title').textContent = titre; document.getElementById('lesson-instructions').innerHTML = texte;
+            afficherPlateau();
+        }
+
+        function quitterLecon() {
+            modeLecon = false; leconEnCours = null;
+            document.getElementById('lesson-menu').style.display = "block"; document.getElementById('lesson-active-area').style.display = "none";
+            afficherPlateau();
+        }
+
+        chargerDonnees();
+    </script>
+</body>
+</html>
