@@ -17,15 +17,19 @@
             align-items: center; 
             min-height: 100vh; 
             padding: 40px 20px; 
+            position: relative;
         }
         
         #dashboard { max-width: 1000px; width: 100%; }
 
-        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 50px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; border-bottom: 1px solid #334155; padding-bottom: 20px; flex-wrap: wrap; gap: 20px;}
         h1 { font-size: 2.5rem; font-weight: 700; color: #f8fafc; letter-spacing: -1px; }
         .subtitle { color: #94a3b8; font-size: 1.1rem; font-weight: 300; }
         
+        .header-actions { display: flex; gap: 15px; align-items: center; }
         .stat-badge { background: #1e293b; padding: 10px 20px; border-radius: 8px; border: 1px solid #334155; font-size: 1.2rem; font-weight: 700; color: #38bdf8; }
+        .btn-stats { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 1.1rem; transition: 0.2s; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+        .btn-stats:hover { background: #7c3aed; transform: translateY(-2px); }
 
         .grid-apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
 
@@ -37,6 +41,26 @@
         .app-desc { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px; flex-grow: 1; }
         
         .app-stats { background: #0f172a; padding: 10px; border-radius: 6px; font-size: 0.85rem; color: #cbd5e1; font-family: monospace; display: flex; justify-content: space-between; }
+
+        /* --- STYLES DU POP-UP DE FIN DE SEMAINE --- */
+        #popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .popup-box {
+            background: #1e293b; border: 2px solid #8b5cf6; border-radius: 16px;
+            padding: 40px; max-width: 450px; width: 90%; text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .popup-icon { font-size: 4rem; margin-bottom: 15px; }
+        .popup-title { font-size: 1.8rem; font-weight: 800; color: #f8fafc; margin-bottom: 10px; }
+        .popup-desc { color: #94a3b8; font-size: 1.05rem; margin-bottom: 25px; line-height: 1.5; }
+        .popup-buttons { display: flex; gap: 15px; justify-content: center; }
+        .btn-close { background: #334155; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-close:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -47,7 +71,10 @@
                 <h1>Espace Personnel</h1>
                 <p class="subtitle">Entraînement cognitif & Compétences techniques</p>
             </div>
-            <div class="stat-badge" id="total-xp">XP Globale: ...</div>
+            <div class="header-actions">
+                <div class="stat-badge" id="total-xp">XP Globale: ...</div>
+                <a href="stats_pro.html" class="btn-stats">📈 Voir mes stats</a>
+            </div>
         </div>
 
         <div class="grid-apps">
@@ -55,10 +82,7 @@
                 <div class="app-icon">⌨️</div>
                 <div class="app-title">Master Dactylographie</div>
                 <div class="app-desc">Améliorez votre vitesse de frappe (MPM) et votre précision avec des exercices progressifs inspirés d'EdClub.</div>
-                <div class="app-stats">
-                    <span id="stat-dactylo-wpm">Record: -- MPM</span>
-                    <span id="stat-dactylo-acc">Prc: --%</span>
-                </div>
+                <div class="app-stats"><span id="stat-dactylo-wpm">Record: -- MPM</span><span id="stat-dactylo-acc">Prc: --%</span></div>
             </a>
 
             <a href="echecs_pro.html" class="app-card">
@@ -98,6 +122,18 @@
         </div>
     </div>
 
+    <div id="popup-overlay">
+        <div class="popup-box">
+            <div class="popup-icon">🗓️</div>
+            <div class="popup-title">Bilan de la Semaine !</div>
+            <div class="popup-desc">C'est la fin de la semaine. Prenez un instant pour observer vos progrès, votre temps d'entraînement et vos nouvelles victoires.</div>
+            <div class="popup-buttons">
+                <button class="btn-close" onclick="fermerPopup()">Plus tard</button>
+                <a href="stats_pro.html" class="btn-stats">Consulter mon rapport</a>
+            </div>
+        </div>
+    </div>
+
     <script>
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         
@@ -128,7 +164,33 @@
             } catch(e) { console.error("Erreur Cloud", e); }
         }
 
+        // --- GESTION DU POP-UP INTELLIGENT ---
+        function verifierFinDeSemaine() {
+            const jourActuel = new Date().getDay(); // 0 = Dimanche, 5 = Vendredi, 6 = Samedi
+            const dejaVu = sessionStorage.getItem('popupStatsVu'); // Pour ne pas harceler si on recharge la page
+
+            // Si on est le week-end (Vendredi, Samedi ou Dimanche) et qu'on ne l'a pas encore fermé cette session
+            if ((jourActuel === 0 || jourActuel === 5 || jourActuel === 6) && !dejaVu) {
+                const overlay = document.getElementById('popup-overlay');
+                overlay.style.display = 'flex';
+                // Petite animation fluide
+                setTimeout(() => {
+                    overlay.style.opacity = '1';
+                    document.querySelector('.popup-box').style.transform = 'translateY(0)';
+                }, 10);
+            }
+        }
+
+        function fermerPopup() {
+            const overlay = document.getElementById('popup-overlay');
+            overlay.style.opacity = '0';
+            document.querySelector('.popup-box').style.transform = 'translateY(20px)';
+            sessionStorage.setItem('popupStatsVu', 'true'); // On mémorise qu'on l'a fermé
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        }
+
         chargerStatsPro();
+        verifierFinDeSemaine();
     </script>
 </body>
 </html>
