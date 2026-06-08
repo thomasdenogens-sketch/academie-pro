@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Échecs Pro - Masterclass & IA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container {
+            max-width: 1100px; width: 100%;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 30px; border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 800; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #38bdf8; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 25px; justify-content: center; align-items: stretch; flex-wrap: wrap; margin-top: 10px; }
+
+        /* Évaluation */
+        .eval-bar-container { width: 25px; height: 480px; background: #161512; border-radius: 4px; overflow: hidden; border: 1px solid #334155; display: flex; flex-direction: column; }
+        .eval-white { background: #ffffff; width: 100%; height: 50%; transition: height 0.5s ease; }
+
+        /* Échiquier */
+        #board-container { width: 100%; max-width: 480px; }
+        #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; aspect-ratio: 1; border: 4px solid #334155; border-radius: 6px; overflow: hidden; }
+        .case { display: flex; justify-content: center; align-items: center; font-size: clamp(2rem, 6vw, 3.5rem); cursor: pointer; position: relative; }
+        .case.blanche { background-color: #cbd5e1; color: #1e293b; } 
+        .case.noire { background-color: #475569; color: #f8fafc; }   
+        .case.selectionnee { background-color: rgba(56, 189, 248, 0.4) !important; box-shadow: inset 0 0 10px #38bdf8; }
+        .case.coup-valide::after { content: ''; position: absolute; width: 25%; height: 25%; background: rgba(56, 189, 248, 0.7); border-radius: 50%; }
+        .case.coup-attaque::after { content: ''; position: absolute; width: 80%; height: 80%; border: 4px solid rgba(248, 113, 113, 0.6); border-radius: 50%; }
+        .case.guide-ouverture { background-color: rgba(52, 211, 153, 0.4) !important; }
+
+        /* Panneau Latéral Multifonction */
+        .side-panel {
+            flex: 1; min-width: 300px; max-width: 350px; height: 480px;
+            background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .panel-tabs { display: flex; border-bottom: 1px solid #334155; }
+        .ptab { flex: 1; background: #1e293b; color: #94a3b8; border: none; padding: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .ptab.actif { background: #0f172a; color: #38bdf8; border-bottom: 2px solid #38bdf8; }
+        .ptab:hover:not(.actif) { background: #334155; color: #e2e8f0; }
+
+        .tab-content { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; }
+        .tab-content.actif { display: flex; }
+
+        /* Contenu Match IA */
+        .status-box { padding-bottom: 15px; border-bottom: 1px solid #334155; margin-bottom: 15px; }
+        #engine-status { font-weight: 700; color: #38bdf8; margin-bottom: 5px; font-size: 1.1rem; }
+        #advantage-text { font-size: 0.85rem; color: #94a3b8; font-family: 'Fira Code', monospace; }
+        .moves-log { flex: 1; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.9rem; color: #cbd5e1; }
+        .move-row { display: flex; padding: 4px 0; border-bottom: 1px solid #1e293b; }
+        .move-num { width: 35px; color: #64748b; }
+        .move-w { width: 70px; color: #f8fafc; }
+        .move-b { width: 70px; color: #94a3b8; }
+
+        /* Contenu Masterclass */
+        .lecon-card { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .lecon-card:hover { border-color: #38bdf8; }
+        .lecon-card h4 { color: #f8fafc; margin-bottom: 5px; }
+        .lecon-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; }
+        
+        #lesson-active-area { display: none; flex-direction: column; height: 100%; }
+        #lesson-title { color: #38bdf8; font-size: 1.2rem; font-weight: 800; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px;}
+        #lesson-instructions { background: #1e293b; padding: 15px; border-radius: 8px; border-left: 4px solid #38bdf8; color: #e2e8f0; line-height: 1.5; font-size: 0.95rem; margin-bottom: 20px;}
+
+        .controls-footer { margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        select, .btn-action { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-action:hover { background: #334155; }
+        .btn-oups { border-color: #f87171; color: #f87171; }
+        .btn-oups:hover { background: rgba(248, 113, 113, 0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Échecs Pro : Analyse & Stratégie</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div class="eval-bar-container" title="Évaluation de la position">
+                <div class="eval-white" id="barre-blancs"></div>
+            </div>
+
+            <div id="board-container">
+                <div id="board"></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="ptab actif" onclick="switchTab('match')" id="btn-tab-match">🤖 Match IA</button>
+                    <button class="ptab" onclick="switchTab('class')" id="btn-tab-class">🎓 Masterclass</button>
+                </div>
+
+                <div id="tab-match" class="tab-content actif">
+                    <div class="status-box">
+                        <div id="engine-status">Analyse prête. À vous !</div>
+                        <div id="advantage-text">Score : 0.00 (Égalité)</div>
+                    </div>
+                    <div class="moves-log" id="log-coups"></div>
+                </div>
+
+                <div id="tab-class" class="tab-content">
+                    <div id="lesson-menu">
+                        <h3 style="margin-bottom: 15px; color:#cbd5e1; font-size: 1rem;">Règles Spéciales</h3>
+                        <div class="lecon-card" onclick="lancerLecon('roque')">
+                            <h4>Le Roque</h4><p>Mettez votre Roi à l'abri et activez votre Tour.</p>
+                        </div>
+                        <div class="lecon-card" onclick="lancerLecon('passant')">
+                            <h4>Prise en Passant</h4><p>La règle secrète de capture des pions.</p>
+                        </div>
+                        
+                        <h3 style="margin: 20px 0 15px 0; color:#cbd5e1; font-size: 1rem;">Ouvertures Stratégiques</h3>
+                        <div class="lecon-card" onclick="lancerLecon('gambit')">
+                            <h4>Le Gambit Dame</h4><p>L'ouverture agressive pour contrôler le centre.</p>
+                        </div>
+                        <div class="lecon-card" onclick="lancerLecon('italienne')">
+                            <h4>La Partie Italienne</h4><p>Développement rapide et attaque sur f7.</p>
+                        </div>
+                    </div>
+
+                    <div id="lesson-active-area">
+                        <div id="lesson-title">Titre Leçon</div>
+                        <div id="lesson-instructions">Instructions ici...</div>
+                        <button class="btn-action" onclick="quitterLecon()" style="margin-top: auto;">❌ Quitter la leçon</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-footer" id="match-controls">
+            <select id="select-level" onchange="changerNiveau()">
+                <option value="1">🟢 IA : Niveau 1 (Loisir)</option>
+                <option value="2" selected>🟠 IA : Niveau 2 (Club)</option>
+                <option value="3">🔴 IA : Niveau 3 (Stratège Positionnel)</option>
+            </select>
+            <button class="btn-action btn-oups" onclick="annulerCoup()">↩️ Annuler coup</button>
+            <button class="btn-action" onclick="reinitialiserPartie()">🔄 Recommencer</button>
+            <a href="index.html" class="btn-retour" style="background:#38bdf8; color:#0f172a;">Dashboard Pro</a>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+
+        const UNICODE_PIECES = { 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟', 'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟' };
+
+        // --- BASE DE DONNÉES DES COURS (MASTERCLASS) ---
+        const COURS_PRO = {
+            roque: { nom: "Le Roque", fen: '4k2r/8/8/8/8/8/8/4K2R w Kk - 0 1', coups: ['O-O'], msg: ["Le Roque est essentiel pour protéger le Roi. <b>Déplacez votre Roi de deux cases vers la droite (sur g1).</b> La Tour se placera automatiquement !"] },
+            passant: { nom: "La Prise en Passant", fen: '8/8/8/3pP3/8/8/8/8 w - d6 0 1', coups: ['exd6'], msg: ["Règle méconnue : le pion noir vient d'avancer de 2 cases pour vous fuir. <b>Capturez-le en avançant en diagonale sur d6</b>, comme s'il n'avait avancé que d'une case !"] },
+            gambit: { nom: "Le Gambit Dame", coups: ['d4', 'd5', 'c4'], msg: ["<b>Jouez 1. d4</b>. C'est l'une des ouvertures les plus solides pour contrôler le centre.", "Les Noirs répondent 1... d5 pour contester le centre.", "<b>Jouez 2. c4</b>. C'est le Gambit Dame ! Vous offrez temporairement un pion latéral pour détruire le centre adverse."] },
+            italienne: { nom: "La Partie Italienne", coups: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4'], msg: ["<b>Jouez 1. e4</b>. Libère les lignes pour la Reine et le Fou.", "Les Noirs jouent 1... e5.", "<b>Jouez 2. Cf3 (Cavalier en f3)</b>. Vous attaquez le pion adverse et développez une pièce.", "Les Noirs défendent avec 2... Cc6.", "<b>Jouez 3. Fc4 (Fou en c4)</b>. L'Italienne ! Votre Fou vise la case faible f7 du Roi noir."] }
+        };
+
+        let game = new Chess();
+        let selectedSquare = null, validMoves = [], tourBloque = false, niveauIA = 2, xpPro = 0;
+        let modeActuel = 'match'; // 'match' ou 'lecon'
+        let leconEnCours = null, etapeLecon = 0;
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/echecsPro.json`);
+                let data = await res.json();
+                xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            drawBoard();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points;
+            document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/echecsPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        // --- GESTION DE L'INTERFACE (ONGLETS) ---
+        function switchTab(tabId) {
+            document.getElementById('btn-tab-match').classList.remove('actif');
+            document.getElementById('btn-tab-class').classList.remove('actif');
+            document.getElementById('tab-match').classList.remove('actif');
+            document.getElementById('tab-class').classList.remove('actif');
+
+            document.getElementById(`btn-tab-${tabId}`).classList.add('actif');
+            document.getElementById(`tab-${tabId}`).classList.add('actif');
+
+            if (tabId === 'match' && modeActuel !== 'match') quitterLecon();
+        }
+
+        // --- GESTION DES COURS ---
+        function lancerLecon(id) {
+            modeActuel = 'lecon';
+            leconEnCours = COURS_PRO[id];
+            etapeLecon = 0;
+            
+            document.getElementById('lesson-menu').style.display = "none";
+            document.getElementById('lesson-active-area').style.display = "flex";
+            document.getElementById('match-controls').style.display = "none";
+            document.getElementById('lesson-title').textContent = `🎓 ${leconEnCours.nom}`;
+            
+            if (leconEnCours.fen) game.load(leconEnCours.fen); else game.reset();
+            selectedSquare = null; validMoves = []; tourBloque = false;
+            
+            executerEtapeLecon();
+        }
+
+        function quitterLecon() {
+            modeActuel = 'match';
+            document.getElementById('lesson-menu').style.display = "block";
+            document.getElementById('lesson-active-area').style.display = "none";
+            document.getElementById('match-controls').style.display = "flex";
+            reinitialiserPartie();
+        }
+
+        function executerEtapeLecon() {
+            if(etapeLecon >= leconEnCours.coups.length) {
+                document.getElementById('lesson-instructions').innerHTML = "<b>🌟 Excellent !</b> Vous avez maîtrisé cette notion. Vous pouvez fermer la leçon.";
+                tourBloque = true; drawBoard(); return;
+            }
+
+            document.getElementById('lesson-instructions').innerHTML = leconEnCours.msg[etapeLecon];
+            let moveObj = game.move(leconEnCours.coups[etapeLecon]); game.undo();
+
+            if (moveObj.color !== game.turn()) {
+                tourBloque = true; drawBoard();
+                setTimeout(() => {
+                    game.move(leconEnCours.coups[etapeLecon]);
+                    etapeLecon++; drawBoard(); tourBloque = false;
+                    setTimeout(executerEtapeLecon, 600);
+                }, 1500);
+            } else {
+                tourBloque = false; drawBoard();
+            }
+        }
+
+        // --- MOTEUR DE JEU CLASSIQUE ---
+        function changerNiveau() { niveauIA = parseInt(document.getElementById('select-level').value); }
+        function reinitialiserPartie() { game.reset(); selectedSquare = null; validMoves = []; tourBloque = false; majInterface(); drawBoard(); }
+        function annulerCoup() { if(tourBloque || modeActuel === 'lecon') return; game.undo(); game.undo(); selectedSquare = null; validMoves = []; majInterface(); drawBoard(); }
+
+        function posToSquare(r, c) { return String.fromCharCode(97 + c) + (8 - r); }
+
+        function drawBoard() {
+            const boardDiv = document.getElementById('board'); boardDiv.innerHTML = ''; let layout = game.board();
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    let sqId = posToSquare(r, c); let sqDiv = document.createElement('div');
+                    sqDiv.className = `case ${(r + c) % 2 === 1 ? 'noire' : 'blanche'}`;
+                    
+                    let piece = layout[r][c];
+                    if (piece) {
+                        sqDiv.textContent = UNICODE_PIECES[piece.type.toLowerCase()];
+                        sqDiv.style.color = piece.color === 'w' ? "#ffffff" : "#0f172a";
+                        if(piece.color === 'w') sqDiv.style.textShadow = "0 2px 4px rgba(0,0,0,0.5), -1px -1px 0 #475569, 1px -1px 0 #475569, -1px 1px 0 #475569, 1px 1px 0 #475569";
+                    }
+
+                    if (selectedSquare === sqId) sqDiv.classList.add('selectionnee');
+                    if (validMoves.find(m => m.to === sqId)) sqDiv.classList.add(piece ? 'coup-attaque' : 'coup-valide');
+
+                    // Guide visuel de leçon
+                    if (modeActuel === 'lecon' && !tourBloque && etapeLecon < leconEnCours.coups.length) {
+                        let m = game.move(leconEnCours.coups[etapeLecon]); game.undo();
+                        if (m.from === sqId || m.to === sqId) sqDiv.classList.add('guide-ouverture');
+                    }
+
+                    sqDiv.onclick = () => clicCase(sqId); boardDiv.appendChild(sqDiv);
+                }
+            }
+            if(modeActuel === 'match') majLogCoups();
+        }
+
+        function clicCase(sq) {
+            if (tourBloque) return;
+            let moveDetails = validMoves.find(m => m.to === sq);
+
+            if (moveDetails) {
+                // Si on est en leçon, on vérifie que c'est le coup exact attendu
+                if (modeActuel === 'lecon') {
+                    let moveAttendu = game.move(leconEnCours.coups[etapeLecon]); game.undo();
+                    if (selectedSquare === moveAttendu.from && sq === moveAttendu.to) {
+                        game.move({from: selectedSquare, to: sq, promotion: 'q'});
+                        selectedSquare = null; validMoves = []; etapeLecon++; drawBoard();
+                        setTimeout(executerEtapeLecon, 400);
+                    }
+                    return;
+                }
+
+                // Match classique
+                game.move({ from: selectedSquare, to: sq, promotion: 'q' });
+                selectedSquare = null; validMoves = []; drawBoard();
+                
+                if (verifierFinPartie()) return;
+
+                tourBloque = true;
+                document.getElementById('engine-status').textContent = "Calcul IA en cours...";
+                setTimeout(jouerIA, 600);
+                return;
+            }
+
+            let p = game.get(sq);
+            if (p && p.color === game.turn()) {
+                selectedSquare = sq; validMoves = game.moves({ square: sq, verbose: true }); drawBoard();
+            } else { selectedSquare = null; validMoves = []; drawBoard(); }
+        }
+
+        function evaluerPosition(g) {
+            let v = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 9000 }, s = 0;
+            g.board().forEach(row => { row.forEach(p => { if (p) s += (p.color === 'b' ? v[p.type] : -v[p.type]); }); }); return s;
+        }
+
+        function jouerIA() {
+            let moves = game.moves({ verbose: true }); if (moves.length === 0) return;
+            let meilleurCoup = null;
+
+            if (niveauIA === 1) { meilleurCoup = moves[Math.floor(Math.random() * moves.length)]; } 
+            else if (niveauIA === 2) {
+                let mS = -99999; moves.sort(() => Math.random() - 0.5);
+                for(let m of moves) { game.move(m); let s = evaluerPosition(game); game.undo(); if(s > mS) { mS = s; meilleurCoup = m; } }
+            } else {
+                let mS = -99999; moves.sort(() => Math.random() - 0.5);
+                for(let m of moves) {
+                    game.move(m); let resps = game.moves({ verbose: true }), pRB = 99999;
+                    for(let r of resps) { game.move(r); let s = evaluerPosition(game); game.undo(); if(s < pRB) pRB = s; }
+                    game.undo(); if(pRB > mS) { mS = pRB; meilleurCoup = m; }
+                }
+            }
+
+            game.move(meilleurCoup || moves[0]); tourBloque = false; majInterface(); drawBoard();
+        }
+
+        function majInterface() {
+            verifierFinPartie();
+            let score = evaluerPosition(game);
+            let pourcentageBlancs = Math.max(5, Math.min(95, 50 - (score * 2)));
+            document.getElementById('barre-blancs').style.height = pourcentageBlancs + "%";
+
+            let txtScore = (score / -10).toFixed(2);
+            let advTxt = score === 0 ? "Score : 0.00 (Égalité)" : (score < 0 ? `Avantage Blancs : +${txtScore}` : `Avantage Noirs : ${txtScore}`);
+            document.getElementById('advantage-text').textContent = advTxt;
+        }
+
+        function verifierFinPartie() {
+            const status = document.getElementById('engine-status');
+            if (game.in_checkmake()) {
+                if (game.turn() === 'b') { status.textContent = "🏆 VICTOIRE (Mat) !"; sauverXP(25); } else { status.textContent = "💀 DÉFAITE (Mat)..."; }
+                tourBloque = true; return true;
+            }
+            if (game.in_draw()) { status.textContent = "🤝 MATCH NUL (Égalité)"; tourBloque = true; return true; }
+            status.textContent = game.in_check() ? "⚠️ ROI EN ÉCHEC !" : "À votre tour (Blancs)";
+            return false;
+        }
+
+        function majLogCoups() {
+            let log = document.getElementById('log-coups'); log.innerHTML = ''; let hist = game.history();
+            for(let i=0; i<hist.length; i+=2) { log.innerHTML += `<div class="move-row"><div class="move-num">${(i/2)+1}.</div><div class="move-w">${hist[i]}</div><div class="move-b">${hist[i+1]||''}</div></div>`; }
+            log.scrollTop = log.scrollHeight;
+        }
+
+        chargerDonnees();
+    </script>
+</body>
+</html>
