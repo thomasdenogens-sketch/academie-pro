@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dune V4 - Fix Moteur Physique</title>
+    <title>Dune Control V4.2 - Diagnostic Intégré</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
@@ -17,19 +17,22 @@
         }
         
         .dos-container { 
-            width: 1050px; background: #1a1f26; 
+            width: 1300px; /* Plus large pour la grande carte */
+            background: #1a1f26; 
             border: 6px double #3a4659; border-radius: 4px; padding: 15px;
             box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; gap: 15px;
         }
 
         #game-container { 
             border: 4px solid #252d3a; background: #000;
-            image-rendering: pixelated; cursor: crosshair;
+            image-rendering: pixelated; /* Pour le look rétro */
+            cursor: crosshair;
         }
 
         .sidebar-panel { 
             flex: 1; background: #11141a; border: 4px solid #252d3a; 
-            padding: 15px; display: flex; flex-direction: column; gap: 15px;
+            padding: 15px; display: flex; flex-direction: column; gap: 10px;
+            max-width: 300px;
         }
 
         .screen-text { background: #07090c; padding: 10px; border: 1px solid #252d3a; border-radius: 4px; }
@@ -37,70 +40,96 @@
 
         .dos-btn { 
             background: #252d3a; color: #e2e8f0; border: 2px solid #3a4659;
-            padding: 12px; font-family: 'VT323', monospace; font-size: 1.4rem;
+            padding: 10px; font-family: 'VT323', monospace; font-size: 1.3rem;
             cursor: pointer; text-align: left; transition: 0.1s; width: 100%;
         }
-        .dos-btn:hover { background: #3a4659; color: #f59e0b; border-color: #f59e0b; }
+        .dos-btn:hover:not(:disabled) { background: #3a4659; color: #f59e0b; border-color: #f59e0b; }
         .dos-btn.active { background: #10b981; color: #0f172a; border-color: #059669; }
+        .dos-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .instructions { font-size: 1.1rem; color: #64748b; line-height: 1.3; }
+        .instructions { font-size: 1.1rem; color: #64748b; line-height: 1.3; margin-top: 10px;}
         .instructions b { color: #38bdf8; }
+        .status-ok { color: #2ecc71; font-weight: bold;}
+        .status-err { color: #e74c3c; font-weight: bold;}
     </style>
 </head>
 <body>
 
-    <h2 style="margin-bottom: 10px; color: #f59e0b;">Moteur Arrakis - V4.1 (Physics Fixed)</h2>
+    <h2 style="margin-bottom: 10px; color: #f59e0b;">Moteur Arrakis - V4.2</h2>
     
     <div class="dos-container">
         <div id="game-container"></div>
 
         <div class="sidebar-panel">
             <div class="screen-text">
-                <div style="font-size:1.1rem; color:#64748b; text-align:center;">CRÉDITS DISPONIBLES</div>
+                <div style="font-size:1.1rem; color:#64748b; text-align:center;">CRÉDITS SPICIAUX</div>
                 <div class="money-display" id="credits-ui">0150</div>
             </div>
 
             <div style="color:#f59e0b; border-bottom:1px solid #252d3a; padding-bottom:5px; margin-top:10px;">CONSTRUCTION</div>
             
             <button class="dos-btn" id="btn-concrete" onclick="setBuildMode('concrete')">🧱 Dalle Béton (10$)</button>
-            <button class="dos-btn" id="btn-refinery" onclick="setBuildMode('refinery')">🏭 Raffinerie (80$)</button>
+            <button class="dos-btn" id="btn-refinery" onclick="setBuildMode('refinery')" disabled>🏭 Raffinerie (80$)</button>
             <button class="dos-btn" onclick="setBuildMode(null)" style="text-align: center; color: #f87171;">❌ Annuler Ordre</button>
 
-            <div class="instructions" style="margin-top: auto;">
-                <b>Clic Gauche</b> : Sélectionner le tank (il clignotera en vert) / Poser un bâtiment.<br><br>
-                <b>Clic Droit</b> : Déplacer le tank dans le noir pour effacer le brouillard.
+            <div class="instructions">
+                <b>NOUVEAUX CONTRÔLES (TOUT CLIC GAUCHE) :</b><br>
+                1. Cliquer sur le tank pour le sélectionner (il clignotera en Vert).<br>
+                2. Cliquer sur la carte pour le déplacer.<br><br>
+                Le tank éclaire une zone de 3 cases autour de lui.
+            </div>
+
+            <div class="screen-text" style="font-family: monospace; font-size: 0.8rem; margin-top: auto;">
+                Diagnostic Images (assets/) :<br>
+                - tank.png : <span id="diag-tank">...</span><br>
+                - sable.png : <span id="diag-sand">...</span><br>
+                - rocher.png : <span id="diag-rock">...</span>
             </div>
             
-            <a href="index.html" class="dos-btn" style="text-align:center; text-decoration:none; margin-top:10px; background:#07090c;">Quitter</a>
+            <a href="index.html" class="dos-btn" style="text-align:center; text-decoration:none; background:#07090c;">[ Quitter ]</a>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURATION DU MONDE (PLUS GRAND) ---
+        const TILE_SIZE = 32;
+        const MAP_WIDTH = 30;  // 960px
+        const MAP_HEIGHT = 22; // 704px
+
         let credits = 150;
         let buildMode = null;
-        let updateCreditsUI;
+        let selectedUnit = null;
 
+        // Variables de diagnostic
+        let assetStatus = { tank: false, sand: false, rock: false };
+
+        // --- GESTION INTERFACE HTML ---
         function setBuildMode(mode) {
+            if (selectedUnit) { selectedUnit.clearTint(); selectedUnit = null; } // Désélectionner tank si on construit
             buildMode = mode;
             document.getElementById('btn-concrete').classList.remove('active');
             document.getElementById('btn-refinery').classList.remove('active');
             if (mode) document.getElementById(`btn-${mode}`).classList.add('active');
         }
 
-        const TILE_SIZE = 32;
-        const MAP_WIDTH = 22;  
-        const MAP_HEIGHT = 18; 
+        function updateUI() {
+            document.getElementById('credits-ui').innerText = credits.toString().padStart(4, '0');
+            // Activer raffinerie seulement si on a assez d'argent
+            document.getElementById('btn-refinery').disabled = credits < 80;
+            document.getElementById('btn-concrete').disabled = credits < 10;
+        }
 
-        // --- LA CONFIGURATION CRUCIALE CORRIGÉE AVEC LE MOTEUR ARCADE PHYSICS ---
+        // --- CONFIGURATION PHASER 3 ---
         const config = {
-            type: Phaser.AUTO, 
-            width: MAP_WIDTH * TILE_SIZE, 
+            type: Phaser.AUTO,
+            width: MAP_WIDTH * TILE_SIZE,
             height: MAP_HEIGHT * TILE_SIZE,
-            parent: 'game-container', 
+            parent: 'game-container',
             backgroundColor: '#000000',
+            // Activation du moteur physique indispensable pour moveTo
             physics: {
                 default: 'arcade',
-                arcade: { gravity: { y: 0 }, debug: false }
+                arcade: { debug: false }
             },
             scene: { preload: preload, create: create, update: update }
         };
@@ -110,139 +139,166 @@
         let mapData = []; 
         let fogMap = [];  
         let tank;
-        let selectedUnit = null;
+        let groundLayer; // Groupe pour les images du sol
 
         function preload() {
             this.cameras.main.setRoundPixels(true);
             
-            // 1. SÉCURITÉ : On dessine des textures colorées par défaut en mémoire.
-            // Si vos images GitHub ont un problème, ces couleurs s'afficheront au lieu de laisser un écran vide.
-            let textures = ['ground_sand', 'ground_rock', 'unit_tank'];
-            let colors = [0xdcb35c, 0x555555, 0x2563eb]; // Sable jaune, roche grise, tank bleu
+            // 1. GÉNÉRATION DE TEXTURES DE SECOURS (Si vos images GitHub échouent)
+            // Cela garantit que le jeu ne plante pas et affiche des carrés clairs.
+            let gfx = this.make.graphics({x: 0, y: 0, add: false});
             
-            for(let i=0; i<textures.length; i++) {
-                let gfx = this.make.graphics({x: 0, y: 0, add: false});
-                gfx.fillStyle(colors[i]);
-                gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
-                // Si c'est le tank, on lui dessine un petit canon blanc pour le reconnaître
-                if(textures[i] === 'unit_tank') {
-                    gfx.fillStyle(0xffffff); gfx.fillRect(16, 12, 16, 8);
-                }
-                gfx.generateTexture(textures[i], TILE_SIZE, TILE_SIZE);
-            }
+            // Secours Sable (Jaune moche)
+            gfx.fillStyle(0xe3b859); gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+            gfx.generateTexture('backup_sand', TILE_SIZE, TILE_SIZE);
+            
+            // Secours Roche (Gris foncé)
+            gfx.clear(); gfx.fillStyle(0x555555); gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+            gfx.generateTexture('backup_rock', TILE_SIZE, TILE_SIZE);
+            
+            // Secours Tank (Vert brillant pour être bien visible)
+            gfx.clear(); gfx.fillStyle(0x2ecc71); gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+            gfx.generateTexture('backup_tank', TILE_SIZE, TILE_SIZE);
 
-            // 2. CHARGEMENT DE VOS VRAIES IMAGES
-            // Si le fichier existe, Phaser écrasera automatiquement le carré de couleur ci-dessus.
-            this.load.image('ground_sand', 'assets/sable.png');
-            this.load.image('ground_rock', 'assets/rocher.png');
-            this.load.image('unit_tank', 'assets/tank.png');
+            // 2. TENTATIVE DE CHARGEMENT DE VOS IMAGES
+            this.load.image('tank', 'assets/tank.png');
+            this.load.image('sable', 'assets/sable.png');
+            this.load.image('rocher', 'assets/rocher.png');
         }
 
         function create() {
+            // Désactiver le menu contextuel clic droit pour tout le container
             this.input.mouse.disableContextMenu();
 
-            // 1. DESSIN DU SOL
+            // 1. VÉRIFICATION DU DIAGNOSTIC DES IMAGES
+            if (this.textures.exists('tank')) { assetStatus.tank = true; document.getElementById('diag-tank').innerHTML = "<span class='status-ok'>OK</span>"; }
+            else { document.getElementById('diag-tank').innerHTML = "<span class='status-err'>ERREUR</span>"; }
+            
+            if (this.textures.exists('sable')) { assetStatus.sand = true; document.getElementById('diag-sand').innerHTML = "<span class='status-ok'>OK</span>"; }
+            else { document.getElementById('diag-sand').innerHTML = "<span class='status-err'>ERREUR</span>"; }
+            
+            if (this.textures.exists('rocher')) { assetStatus.rock = true; document.getElementById('diag-rock').innerHTML = "<span class='status-ok'>OK</span>"; }
+            else { document.getElementById('diag-rock').innerHTML = "<span class='status-err'>ERREUR</span>"; }
+
+            groundLayer = this.add.group();
+
+            // 2. CRÉATION DU SOL (CARTE GRANDE)
             for (let y = 0; y < MAP_HEIGHT; y++) {
                 mapData[y] = [];
                 for (let x = 0; x < MAP_WIDTH; x++) {
-                    if (y > 10 && x < 8) mapData[y][x] = 1; // Zone de Roche en bas à gauche
-                    else mapData[y][x] = 0; // Le reste est du Sable
+                    // Zone rocheuse en bas à gauche
+                    if (y > MAP_HEIGHT - 6 && x < 8) mapData[y][x] = 1; // Roche
+                    else mapData[y][x] = 0; // Sable
                     
-                    let texture = mapData[y][x] === 1 ? 'ground_rock' : 'ground_sand';
-                    let tile = this.add.image(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, texture);
+                    let key = mapData[y][x] === 1 ? (assetStatus.rock ? 'rocher' : 'backup_rock') : (assetStatus.sand ? 'sable' : 'backup_sand');
+                    
+                    let tile = this.add.image(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, key);
                     tile.setDepth(0);
+                    groundLayer.add(tile);
                 }
             }
 
-            // 2. POSE DU BROUILLARD DE GUERRE NOIR
+            // 3. CRÉATION DU BROUILLARD DE GUERRE NOIR
             for (let y = 0; y < MAP_HEIGHT; y++) {
                 fogMap[y] = [];
                 for (let x = 0; x < MAP_WIDTH; x++) {
                     let fog = this.add.rectangle(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE, TILE_SIZE, 0x000000);
-                    fog.setDepth(10); 
+                    fog.setDepth(10); // Au-dessus de tout
                     fogMap[y][x] = fog;
                 }
             }
 
-            // 3. CRÉATION DU TANK AVEC LA PHYSIQUE SÉCURISÉE
-            tank = this.physics.add.sprite(3 * TILE_SIZE + TILE_SIZE/2, 14 * TILE_SIZE + TILE_SIZE/2, 'unit_tank');
+            // 4. CRÉATION DU TANK (Utilise backup si tank.png absent)
+            let tankKey = assetStatus.tank ? 'tank' : 'backup_tank';
+            tank = this.physics.add.sprite(4 * TILE_SIZE + TILE_SIZE/2, (MAP_HEIGHT - 3) * TILE_SIZE + TILE_SIZE/2, tankKey);
             tank.setDepth(5);
             tank.setInteractive();
             tank.targetX = tank.x; tank.targetY = tank.y; tank.isMoving = false;
 
-            updateCreditsUI = () => {
-                document.getElementById('credits-ui').innerText = credits.toString().padStart(4, '0');
-            };
-            updateCreditsUI();
+            updateUI();
 
-            // 4. INTERACTION SOURIS COMPLÈTE
+            // 5. GESTION UNIQUE DU CLIC GAUCHE (PLUS ROBUSTE)
             this.input.on('pointerdown', (pointer) => {
+                if (!pointer.leftButtonDown()) return; // On ignore tout sauf le clic gauche
+
                 let tx = Math.floor(pointer.x / TILE_SIZE);
                 let ty = Math.floor(pointer.y / TILE_SIZE);
 
-                if (pointer.leftButtonDown()) {
-                    if (buildMode) {
-                        // Empêcher de construire dans le noir
-                        if (fogMap[ty] && fogMap[ty][tx]) { return; }
+                // --- CAS A : MODE CONSTRUCTION ACTIVÉ ---
+                if (buildMode) {
+                    // Interdit de construire dans le brouillard
+                    if (fogMap[ty] && fogMap[ty][tx]) return;
 
-                        if (buildMode === 'concrete' && mapData[ty][tx] === 1 && credits >= 10) {
-                            mapData[ty][tx] = 2; credits -= 10;
-                            let concrete = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE, TILE_SIZE, 0x374151);
-                            concrete.setStrokeStyle(1, 0x1f2937); concrete.setDepth(1);
-                            updateCreditsUI(); setBuildMode(null);
-                        } 
-                        else if (buildMode === 'refinery' && mapData[ty][tx] === 2 && credits >= 80) {
-                            mapData[ty][tx] = 3; credits -= 80;
-                            let refinery = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE-6, TILE_SIZE-6, 0x1e40af);
-                            refinery.setStrokeStyle(2, 0x60a5fa); refinery.setDepth(2);
-                            updateCreditsUI(); setBuildMode(null);
-                        }
-                    } else {
-                        // Clic gauche sur le Tank pour le sélectionner
-                        let distanceAuTank = Phaser.Math.Distance.Between(pointer.x, pointer.y, tank.x, tank.y);
-                        if (distanceAuTank < TILE_SIZE) {
-                            selectedUnit = tank;
-                            tank.setTint(0x4ade80); // Coloration verte de sélection
-                        } else {
-                            // Clic dans le vide : on désélectionne
-                            selectedUnit = null;
-                            tank.clearTint();
-                        }
+                    if (buildMode === 'concrete' && mapData[ty][tx] === 1 && credits >= 10) {
+                        mapData[ty][tx] = 2; // Béton
+                        credits -= 10;
+                        let concrete = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE, TILE_SIZE, 0x333333);
+                        concrete.setStrokeStyle(1, 0x000000); concrete.setDepth(1);
+                        setBuildMode(null); updateUI();
+                    } 
+                    else if (buildMode === 'refinery' && mapData[ty][tx] === 2 && credits >= 80) {
+                        mapData[ty][tx] = 3; // Raffinerie
+                        credits -= 80;
+                        let refinery = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE-6, TILE_SIZE-6, 0x1e40af);
+                        refinery.setStrokeStyle(2, 0xffffff); refinery.setDepth(2);
+                        setBuildMode(null); updateUI();
                     }
                 } 
-                else if (pointer.rightButtonDown() && selectedUnit) {
-                    // Clic droit : Donner l'ordre de bouger
-                    tank.targetX = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
-                    tank.targetY = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
-                    tank.isMoving = true;
+                // --- CAS B : TANK DÉJÀ SÉLECTIONNÉ -> ON DONNE L'ORDRE DE BOUGER ---
+                else if (selectedUnit) {
+                    let destX = tx * TILE_SIZE + TILE_SIZE/2;
+                    let destY = ty * TILE_SIZE + TILE_SIZE/2;
+                    
+                    // On ne bouge que si on clique sur une case différente
+                    if (destX !== tank.x || destY !== tank.y) {
+                        selectedUnit.targetX = destX;
+                        selectedUnit.targetY = destY;
+                        selectedUnit.isMoving = true;
+                        console.log("Ordre mouvement reçu vers :", tx, ty);
+                    }
+                } 
+                // --- CAS C : RIEN DE SÉLECTIONNÉ -> ON TENTE DE SÉLECTIONNER LE TANK ---
+                else {
+                    let distanceAuTank = Phaser.Math.Distance.Between(pointer.x, pointer.y, tank.x, tank.y);
+                    // Si on clique assez près du tank
+                    if (distanceAuTank < TILE_SIZE) {
+                        selectedUnit = tank;
+                        // Clignotement vert pour confirmer la sélection
+                        tank.setTint(0x00ff00);
+                        console.log("Tank sélectionné");
+                    }
                 }
             });
         }
 
         function update() {
+            // MOTEUR DE MOUVEMENT (PHYSIQUE ARACDE)
             if (tank.isMoving) {
-                const speed = 120; // Vitesse physique
+                const speed = 150; // Vitesse physique pixels/seconde
                 let distance = Phaser.Math.Distance.Between(tank.x, tank.y, tank.targetX, tank.targetY);
 
+                // Si on est encore loin, on utilise la physique pour bouger
                 if (distance > 4) {
                     this.physics.moveTo(tank, tank.targetX, tank.targetY, speed);
                 } else {
-                    tank.body.setVelocity(0, 0); // Stop net
+                    // Arrivé proche, on stoppe net
+                    tank.body.setVelocity(0, 0);
                     tank.x = tank.targetX; tank.y = tank.targetY;
                     tank.isMoving = false;
+                    console.log("Arrivé");
                 }
             }
 
-            // DISSIPATION DU BROUILLARD AUTOUR DU TANK
+            // MOTEUR DU BROUILLARD DE GUERRE
             let tankTx = Math.floor(tank.x / TILE_SIZE);
             let tankTy = Math.floor(tank.y / TILE_SIZE);
-            let vision = 3; 
+            let visionRange = 3; // Champ de vision
 
-            for (let y = tankTy - vision; y <= tankTy + vision; y++) {
-                for (let x = tankTx - vision; x <= tankTx + vision; x++) {
+            for (let y = tankTy - visionRange; y <= tankTy + visionRange; y++) {
+                for (let x = tankTx - visionRange; x <= tankTx + visionRange; x++) {
                     if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
                         if (fogMap[y][x]) {
-                            fogMap[y][x].destroy();
+                            fogMap[y][x].destroy(); // Effacer le carré noir
                             fogMap[y][x] = null;
                         }
                     }
