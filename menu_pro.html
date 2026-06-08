@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Menus & Courses</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container { max-width: 800px; width: 100%; background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 20px;}
+        .header h1 { color: #10b981; font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;}
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .btn-retour:hover { background: #475569; }
+
+        /* Onglets */
+        .tabs { display: flex; background: #0f172a; border-radius: 8px; overflow: hidden; margin-bottom: 25px; border: 1px solid #334155; }
+        .tab-btn { flex: 1; padding: 15px; background: transparent; border: none; color: #94a3b8; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .tab-btn.actif { background: #10b981; color: #0f172a; }
+        .tab-content { display: none; }
+        .tab-content.actif { display: block; }
+
+        /* Onglet Garde-Manger */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 12px 15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1rem; outline: none; }
+        input[type="text"]:focus { border-color: #10b981; }
+        .btn-add { background: #10b981; color: #0f172a; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+
+        .ingredient-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .ingredient-tag { background: #0f172a; border: 1px solid #334155; padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .del-btn { color: #f43f5e; cursor: pointer; font-weight: bold; }
+
+        /* Onglet Menu */
+        .menu-jour { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .jour-titre { color: #10b981; font-weight: 800; font-size: 1.1rem; text-transform: uppercase; }
+        .jour-repas { font-size: 1.05rem; color: #f8fafc; }
+        .badge-decouverte { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin-left: 10px; }
+        .btn-generate { background: #10b981; color: #0f172a; border: none; padding: 15px; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; width: 100%; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); transition: 0.2s;}
+        .btn-generate:hover { background: #059669; transform: translateY(-2px); }
+
+        /* Onglet Courses */
+        #liste-courses-area { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; font-family: monospace; font-size: 1.1rem; color: #e2e8f0; white-space: pre-wrap; line-height: 1.6; min-height: 200px; margin-bottom: 20px;}
+        .btn-copy { background: #38bdf8; color: #0f172a; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; transition: 0.2s;}
+        .btn-copy:hover { background: #0284c7; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>🥗 Assistant Repas & Courses</h1>
+            <a href="index.html" class="btn-retour">← Retour</a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn actif" onclick="changerOnglet('pantry')" id="btn-pantry">1. Garde-Manger</button>
+            <button class="tab-btn" onclick="changerOnglet('menu')" id="btn-menu">2. Menu de la Semaine</button>
+            <button class="tab-btn" onclick="changerOnglet('shopping')" id="btn-shopping">3. Liste Google Keep</button>
+        </div>
+
+        <div id="tab-pantry" class="tab-content actif">
+            <p style="color: #94a3b8; margin-bottom: 20px; font-size: 0.95rem;">Listez ici les ingrédients que vous aimez acheter régulièrement. Tapez le nom et appuyez sur Entrée.</p>
+            <form class="input-group" onsubmit="ajouterIngredient(event)">
+                <input type="text" id="input-ing" placeholder="Ex: Poulet, Courgettes, Riz basmati..." autocomplete="off">
+                <button type="submit" class="btn-add">Ajouter</button>
+            </form>
+            <div class="ingredient-list" id="liste-ingredients">
+                </div>
+        </div>
+
+        <div id="tab-menu" class="tab-content">
+            <button class="btn-generate" onclick="genererMenu()">🪄 Générer les repas du soir (Lundi - Vendredi)</button>
+            <div id="zone-menu">
+                <p style="text-align: center; color: #64748b; margin-top: 20px;">Cliquez sur le bouton ci-dessus pour planifier la semaine.</p>
+            </div>
+        </div>
+
+        <div id="tab-shopping" class="tab-content">
+            <p style="color: #94a3b8; margin-bottom: 15px; font-size: 0.95rem;">Voici la liste exacte des courses nécessaires pour le menu généré. Copiez-la pour la coller dans Google Keep ou Super U.</p>
+            <div id="liste-courses-area">Le menu n'a pas encore été généré.</div>
+            <button class="btn-copy" onclick="copierPressePapier()">📋 Copier la liste de courses</button>
+            <div id="msg-copy" style="color: #10b981; font-weight: bold; text-align: center; margin-top: 10px; display: none;">Copié dans le presse-papier !</div>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        
+        let ingredientsBase = [];
+        let menuActuel = [];
+        
+        // Liste d'ingrédients sains "Découverte" (Nutri-score A)
+        const decouvertesSante = [
+            "Quinoa Bio", "Lentilles Corail", "Patate Douce", "Boulgour", 
+            "Tofu Fumé", "Pois Chiches", "Épinards Frais", "Sarrasin", "Chou Kale"
+        ];
+
+        // Onglets
+        function changerOnglet(id) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('actif'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('actif'));
+            document.getElementById(`btn-${id}`).classList.add('actif');
+            document.getElementById(`tab-${id}`).classList.add('actif');
+            
+            if(id === 'shopping') genererTexteCourses();
+        }
+
+        // --- GESTION DU GARDE-MANGER (FIREBASE) ---
+        async function chargerIngredients() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}outils/pantry.json`);
+                let data = await res.json();
+                
+                if (data && data.liste && data.liste.length > 0) {
+                    ingredientsBase = data.liste;
+                } else {
+                    // Liste par défaut si vide pour éviter le syndrome de la page blanche
+                    ingredientsBase = ["Riz", "Pâtes", "Poulet", "Œufs", "Courgettes", "Tomates", "Oignons", "Pommes de terre", "Saumon", "Brocolis"];
+                    sauvegarderIngredients();
+                }
+                afficherIngredients();
+            } catch(e) { console.error(e); }
+        }
+
+        async function sauvegarderIngredients() {
+            await fetch(`${FIREBASE_URL}outils/pantry.json`, {
+                method: 'PUT', body: JSON.stringify({ liste: ingredientsBase })
+            });
+        }
+
+        function afficherIngredients() {
+            const div = document.getElementById('liste-ingredients');
+            div.innerHTML = '';
+            ingredientsBase.sort().forEach((ing, index) => {
+                div.innerHTML += `<div class="ingredient-tag">${ing} <span class="del-btn" onclick="supprimerIngredient(${index})">✕</span></div>`;
+            });
+        }
+
+        function ajouterIngredient(e) {
+            e.preventDefault();
+            let input = document.getElementById('input-ing');
+            let val = input.value.trim();
+            if(val && !ingredientsBase.includes(val)) {
+                // Met une majuscule au premier mot
+                val = val.charAt(0).toUpperCase() + val.slice(1);
+                ingredientsBase.push(val);
+                input.value = '';
+                afficherIngredients();
+                sauvegarderIngredients();
+            }
+        }
+
+        function supprimerIngredient(index) {
+            ingredientsBase.splice(index, 1);
+            afficherIngredients();
+            sauvegarderIngredients();
+        }
+
+        // --- GÉNÉRATEUR DE MENU ---
+        function melangerTableau(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function genererMenu() {
+            if(ingredientsBase.length < 5) {
+                alert("Ajoutez au moins 5 ingrédients dans votre garde-manger pour générer un menu varié !");
+                return;
+            }
+
+            const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+            menuActuel = [];
+            
+            let stockMelange = melangerTableau(ingredientsBase);
+            let indexStock = 0;
+
+            const zoneMenu = document.getElementById('zone-menu');
+            zoneMenu.innerHTML = '';
+
+            jours.forEach(jour => {
+                let repas = [];
+                let isDecouverte = false;
+                let decouverteItem = "";
+
+                // 20% de chance d'intégrer un ingrédient découverte Bio par repas
+                if (Math.random() < 0.2) {
+                    isDecouverte = true;
+                    decouverteItem = decouvertesSante[Math.floor(Math.random() * decouvertesSante.length)];
+                    repas.push(decouverteItem);
+                }
+
+                // Piocher 2 ou 3 ingrédients du garde-manger
+                let nbIngredients = isDecouverte ? 2 : 3;
+                for(let i=0; i<nbIngredients; i++) {
+                    if(indexStock >= stockMelange.length) {
+                        stockMelange = melangerTableau(ingredientsBase); // On remélange si on arrive au bout
+                        indexStock = 0;
+                    }
+                    repas.push(stockMelange[indexStock]);
+                    indexStock++;
+                }
+
+                menuActuel.push({ jour: jour, ingredients: repas });
+
+                let badgeHtml = isDecouverte ? `<span class="badge-decouverte">💡 Idée Santé : ${decouverteItem}</span>` : "";
+                
+                zoneMenu.innerHTML += `
+                    <div class="menu-jour">
+                        <div class="jour-titre">${jour}</div>
+                        <div class="jour-repas">Poêlée / Plat avec : <b>${repas.join(' + ')}</b> ${badgeHtml}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- LISTE DE COURSES ---
+        function genererTexteCourses() {
+            if(menuActuel.length === 0) return;
+
+            let coursesSet = new Set();
+            menuActuel.forEach(jour => {
+                jour.ingredients.forEach(ing => coursesSet.add(ing));
+            });
+
+            let listeArray = Array.from(coursesSet).sort();
+            let texteFinal = "🛒 MA LISTE DE COURSES (Repas du Soir)\n-----------------------------------------\n";
+            listeArray.forEach(item => {
+                texteFinal += `☐ ${item}\n`;
+            });
+
+            document.getElementById('liste-courses-area').textContent = texteFinal;
+        }
+
+        function copierPressePapier() {
+            let texte = document.getElementById('liste-courses-area').textContent;
+            if(texte.includes("pas encore été généré")) return;
+
+            navigator.clipboard.writeText(texte).then(() => {
+                let msg = document.getElementById('msg-copy');
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 2000);
+            });
+        }
+
+        chargerIngredients();
+    </script>
+</body>
+</html>
