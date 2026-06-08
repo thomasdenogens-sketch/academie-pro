@@ -19,73 +19,24 @@
             padding: 40px 20px; 
         }
         
-        #dashboard {
-            max-width: 1000px;
-            width: 100%;
-        }
+        #dashboard { max-width: 1000px; width: 100%; }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 50px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 20px;
-        }
-
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 50px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
         h1 { font-size: 2.5rem; font-weight: 700; color: #f8fafc; letter-spacing: -1px; }
         .subtitle { color: #94a3b8; font-size: 1.1rem; font-weight: 300; }
         
-        .stat-badge {
-            background: #1e293b;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #38bdf8; 
-        }
+        .stat-badge { background: #1e293b; padding: 10px 20px; border-radius: 8px; border: 1px solid #334155; font-size: 1.2rem; font-weight: 700; color: #38bdf8; }
 
-        .grid-apps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
+        .grid-apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
 
-        .app-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 30px;
-            text-decoration: none;
-            color: #e2e8f0;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .app-card:hover {
-            transform: translateY(-5px);
-            border-color: #38bdf8;
-            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1);
-        }
+        .app-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 30px; text-decoration: none; color: #e2e8f0; transition: all 0.3s ease; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .app-card:hover { transform: translateY(-5px); border-color: #38bdf8; box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1); }
 
         .app-icon { font-size: 2.5rem; margin-bottom: 15px; }
         .app-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
         .app-desc { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px; flex-grow: 1; }
         
-        .app-stats {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-            font-family: monospace;
-            display: flex;
-            justify-content: space-between;
-        }
+        .app-stats { background: #0f172a; padding: 10px; border-radius: 6px; font-size: 0.85rem; color: #cbd5e1; font-family: monospace; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -114,36 +65,35 @@
                 <div class="app-icon">♞</div>
                 <div class="app-title">Échecs : Analyse Pro</div>
                 <div class="app-desc">Affrontez le moteur Stockfish à haut niveau. Mode analyse, ouvertures complexes et évaluation en temps réel.</div>
-                <div class="app-stats">
-                    <span id="stat-echecs-xp">XP: --</span>
-                </div>
+                <div class="app-stats"><span id="stat-echecs-xp">XP: --</span></div>
             </a>
 
             <a href="othello_pro.html" class="app-card">
                 <div class="app-icon">⚪⚫</div>
                 <div class="app-title">Othello : Master</div>
-                <div class="app-desc">Entraînez-vous à anticiper les coups et à contrôler les coins. Jouable en solo contre l'IA ou à deux sur le même écran.</div>
-                <div class="app-stats">
-                    <span id="stat-othello-xp">XP: --</span>
-                </div>
+                <div class="app-desc">Entraînez-vous à anticiper les coups et à contrôler les coins. Jouable en solo contre l'IA ou à deux.</div>
+                <div class="app-stats"><span id="stat-othello-xp">XP: --</span></div>
             </a>
 
             <a href="jacquet_pro.html" class="app-card">
                 <div class="app-icon">🎲</div>
                 <div class="app-title">Jacquet Tradition</div>
                 <div class="app-desc">Maîtrisez la règle du Postillon, bloquez votre adversaire et calculez vos probabilités aux dés.</div>
-                <div class="app-stats">
-                    <span id="stat-jacquet-xp">XP: --</span>
-                </div>
+                <div class="app-stats"><span id="stat-jacquet-xp">XP: --</span></div>
             </a>
 
             <a href="mancala_pro.html" class="app-card">
                 <div class="app-icon">🕳️</div>
                 <div class="app-title">Mancala : Awélé</div>
                 <div class="app-desc">Le grand jeu des graines africain. Calculez vos récoltes à l'avance et distribuez vos pions avec stratégie.</div>
-                <div class="app-stats">
-                    <span id="stat-mancala-xp">XP: --</span>
-                </div>
+                <div class="app-stats"><span id="stat-mancala-xp">XP: --</span></div>
+            </a>
+
+            <a href="gomoku_pro.html" class="app-card">
+                <div class="app-icon">⛩️</div>
+                <div class="app-title">Gomoku : 5 Alignés</div>
+                <div class="app-desc">Le célèbre morpion japonais sur un grand plateau. Créez des doubles attaques et anticipez les blocages.</div>
+                <div class="app-stats"><span id="stat-gomoku-xp">XP: --</span></div>
             </a>
         </div>
     </div>
@@ -156,29 +106,26 @@
                 let res = await fetch(`${FIREBASE_URL}scores/parent.json`);
                 let data = await res.json() || {};
 
-                // Récupération sécurisée de tous les scores de vos jeux
                 let xpEchecs = data.echecsPro ? (data.echecsPro.xp || 0) : 0;
                 let xpOthello = data.othelloPro ? (data.othelloPro.xp || 0) : 0;
                 let xpJacquet = data.jacquetPro ? (data.jacquetPro.xp || 0) : 0;
                 let xpMancala = data.mancalaPro ? (data.mancalaPro.xp || 0) : 0;
+                let xpGomoku = data.gomokuPro ? (data.gomokuPro.xp || 0) : 0;
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
                 let dactyloAcc = data.dactyloPro ? (data.dactyloPro.acc || 0) : 0;
 
-                // Calcul du total général
-                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + (dactyloRecord * 10);
+                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + (dactyloRecord * 10);
 
-                // Envoi des chiffres sur l'écran
                 document.getElementById('total-xp').textContent = `XP Globale: ${totalXp}`;
                 document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
                 document.getElementById('stat-othello-xp').textContent = `XP: ${xpOthello}`;
                 document.getElementById('stat-jacquet-xp').textContent = `XP: ${xpJacquet}`;
                 document.getElementById('stat-mancala-xp').textContent = `XP: ${xpMancala}`;
+                document.getElementById('stat-gomoku-xp').textContent = `XP: ${xpGomoku}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
                 document.getElementById('stat-dactylo-acc').textContent = `Prc: ${dactyloAcc}%`;
 
-            } catch(e) {
-                console.error("Erreur Cloud", e);
-            }
+            } catch(e) { console.error("Erreur Cloud", e); }
         }
 
         chargerStatsPro();

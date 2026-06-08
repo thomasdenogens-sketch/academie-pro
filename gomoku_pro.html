@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gomoku Pro - Stratégie & Alignement</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght=400;600&family=Inter:wght=400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container {
+            max-width: 1050px; width: 100%;
+            background: #1e293b; border: 1px solid #334155;
+            padding: 30px; border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 800; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #8b5cf6; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 25px; justify-content: center; align-items: stretch; flex-wrap: wrap; margin-top: 10px; }
+
+        /* --- LE PLATEAU DE GOMOKU (GOBAN) --- */
+        #board-container { width: 100%; max-width: 550px; display: flex; justify-content: center; }
+        
+        #gomoku-board {
+            width: 100%; max-width: 500px; aspect-ratio: 1; 
+            background-color: #dcb35c; /* Couleur bois */
+            border: 4px solid #8b5a2b;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            position: relative;
+        }
+
+        /* Lignes de la grille dessinées via pseudo-éléments */
+        .cell {
+            position: relative; width: 100%; height: 100%; cursor: pointer;
+        }
+        .cell::before {
+            content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #5c3a21; z-index: 1;
+        }
+        .cell::after {
+            content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #5c3a21; z-index: 1;
+        }
+        /* Bords de plateau propres */
+        .cell.top::after { top: 50%; } .cell.bottom::after { bottom: 50%; }
+        .cell.left::before { left: 50%; } .cell.right::before { right: 50%; }
+
+        /* Les Pierres (Stones) */
+        .stone {
+            position: absolute; top: 5%; left: 5%; width: 90%; height: 90%; border-radius: 50%;
+            z-index: 5; box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .stone.noir { background: radial-gradient(circle at 30% 30%, #555, #000); }
+        .stone.blanc { background: radial-gradient(circle at 30% 30%, #fff, #ddd); }
+        .stone.winning { box-shadow: 0 0 15px 5px #8b5cf6; transform: scale(1.1); z-index: 10; }
+
+        /* --- PANNEAU LATÉRAL --- */
+        .side-panel {
+            flex: 1; min-width: 280px; max-width: 320px; height: 500px;
+            background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .panel-tabs { display: flex; border-bottom: 1px solid #334155; }
+        .ptab { flex: 1; background: #1e293b; color: #94a3b8; border: none; padding: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .ptab.actif { background: #0f172a; color: #8b5cf6; border-bottom: 2px solid #8b5cf6; }
+
+        .tab-content { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; }
+        .tab-content.actif { display: flex; }
+        
+        #game-status { background: #1e293b; padding: 15px; border-radius: 8px; font-weight: 700; color: #e2e8f0; font-size: 1.1rem; text-align: center; border: 1px solid #334155; margin-bottom: 20px;}
+
+        select, .btn-action { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-action:hover { background: #334155; }
+
+        /* Masterclass */
+        .lecon-card { background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .lecon-card:hover { border-color: #8b5cf6; }
+        .lecon-card h4 { color: #f8fafc; font-size: 0.95rem; margin-bottom: 3px; }
+        .lecon-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.3; }
+        #lesson-active-area { display: none; flex-direction: column; height: 100%; }
+        #lesson-instructions { background: #1e293b; padding: 15px; border-radius: 8px; border-left: 4px solid #8b5cf6; color: #e2e8f0; line-height: 1.4; font-size: 0.9rem; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Gomoku Pro : Anticipation & Alignement</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div id="board-container">
+                <div id="gomoku-board"></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="ptab actif" onclick="switchTab('match')" id="btn-tab-match">🎮 Jouer</button>
+                    <button class="ptab" onclick="switchTab('class')" id="btn-tab-class">🎓 Cours</button>
+                </div>
+
+                <div id="tab-match" class="tab-content actif">
+                    <div id="game-status">Prêt. À vous de jouer (Noir) !</div>
+
+                    <div style="margin-top: auto; display:flex; flex-direction:column; gap:10px;">
+                        <select id="select-mode" onchange="initialiserJeu()">
+                            <option value="ia" selected>👤 Solo (vs IA Défensive)</option>
+                            <option value="local">👥 2 Joueurs (Famille en local)</option>
+                        </select>
+                        <button class="btn-action" onclick="initialiserJeu()">🔄 Recommencer la partie</button>
+                        <a href="index.html" class="btn-retour" style="text-align: center; background:#8b5cf6; color:white;">Dashboard Pro</a>
+                    </div>
+                </div>
+
+                <div id="tab-class" class="tab-content">
+                    <div id="lesson-menu">
+                        <div class="lecon-card" onclick="lancerLecon('menace3')">
+                            <h4>1. La Menace du Trois</h4><p>Pourquoi vous devez toujours bloquer une ligne de 3 ouverte.</p>
+                        </div>
+                        <div class="lecon-card" onclick="lancerLecon('fourchette')">
+                            <h4>2. La Double Attaque (Fourchette)</h4><p>L'arme absolue pour gagner à coup sûr au Gomoku.</p>
+                        </div>
+                    </div>
+                    <div id="lesson-active-area">
+                        <div id="lesson-instructions">...</div>
+                        <button class="btn-action" onclick="quitterLecon()" style="margin-top: auto;">❌ Quitter la leçon</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        let xpPro = 0;
+
+        const SIZE = 15;
+        let board = [], currentPlayer = 1, gameActive = false, modeJeu = 'ia';
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/gomokuPro.json`);
+                let data = await res.json();
+                xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            initialiserJeu();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points; document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/gomokuPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        function initialiserJeu() {
+            modeJeu = document.getElementById('select-mode').value;
+            board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+            currentPlayer = 1; gameActive = true;
+            
+            document.getElementById('game-status').textContent = "À vous de jouer (Pierres Noires).";
+            document.getElementById('game-status').style.color = "#8b5cf6";
+            
+            creerPlateau();
+        }
+
+        function creerPlateau() {
+            const boardDiv = document.getElementById('gomoku-board');
+            boardDiv.innerHTML = '';
+            for(let r=0; r<SIZE; r++) {
+                for(let c=0; c<SIZE; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if(r === 0) cell.classList.add('top'); if(r === SIZE-1) cell.classList.add('bottom');
+                    if(c === 0) cell.classList.add('left'); if(c === SIZE-1) cell.classList.add('right');
+                    
+                    cell.onclick = () => jouerCoup(r, c);
+                    cell.id = `c-${r}-${c}`;
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function jouerCoup(r, c) {
+            if(!gameActive || board[r][c] !== 0) return;
+            
+            placerPierre(r, c, currentPlayer);
+            
+            let gagnant = verifierVictoire(r, c, currentPlayer);
+            if(gagnant) {
+                terminerPartie(gagnant); return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            
+            if(modeJeu === 'ia' && currentPlayer === 2) {
+                gameActive = false;
+                document.getElementById('game-status').textContent = "L'ordinateur réfléchit...";
+                document.getElementById('game-status').style.color = "#cbd5e1";
+                setTimeout(jouerIA, 400);
+            } else {
+                document.getElementById('game-status').textContent = currentPlayer === 1 ? "À Noir de jouer !" : "À Blanc de jouer !";
+                document.getElementById('game-status').style.color = currentPlayer === 1 ? "#8b5cf6" : "#cbd5e1";
+            }
+        }
+
+        function placerPierre(r, c, player) {
+            board[r][c] = player;
+            let cell = document.getElementById(`c-${r}-${c}`);
+            let stone = document.createElement('div');
+            stone.className = `stone ${player === 1 ? 'noir' : 'blanc'}`;
+            cell.appendChild(stone);
+        }
+
+        function verifierVictoire(r, c, player) {
+            const dirs = [[1,0], [0,1], [1,1], [1,-1]];
+            let winningStones = [];
+
+            for(let [dr, dc] of dirs) {
+                let count = 1; let stones = [[r, c]];
+                
+                // Avancer
+                let nr = r + dr, nc = c + dc;
+                while(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === player) {
+                    count++; stones.push([nr, nc]); nr += dr; nc += dc;
+                }
+                
+                // Reculer
+                nr = r - dr; nc = c - dc;
+                while(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === player) {
+                    count++; stones.push([nr, nc]); nr -= dr; nc -= dc;
+                }
+                
+                if(count >= 5) { winningStones = stones; break; }
+            }
+
+            if(winningStones.length > 0) {
+                winningStones.forEach(([wr, wc]) => {
+                    document.querySelector(`#c-${wr}-${wc} .stone`).classList.add('winning');
+                });
+                return player;
+            }
+            return null;
+        }
+
+        function evaluerLigne(r, c, player, dr, dc) {
+            let count = 1; let ouverts = 0;
+            
+            let nr = r + dr, nc = c + dc;
+            while(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === player) { count++; nr += dr; nc += dc; }
+            if(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === 0) ouverts++;
+
+            nr = r - dr; nc = c - dc;
+            while(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === player) { count++; nr -= dr; nc -= dc; }
+            if(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === 0) ouverts++;
+
+            if(count >= 5) return 100000;
+            if(count === 4 && ouverts === 2) return 10000;
+            if(count === 4 && ouverts === 1) return 1000;
+            if(count === 3 && ouverts === 2) return 500;
+            if(count === 3 && ouverts === 1) return 50;
+            if(count === 2 && ouverts === 2) return 10;
+            return 0;
+        }
+
+        function jouerIA() {
+            let meilleurScore = -1; let meilleursCoups = [];
+            const dirs = [[1,0], [0,1], [1,1], [1,-1]];
+
+            for(let r=0; r<SIZE; r++) {
+                for(let c=0; c<SIZE; c++) {
+                    if(board[r][c] !== 0) continue;
+
+                    let scoreAttaque = 0; let scoreDefense = 0;
+                    for(let [dr, dc] of dirs) {
+                        scoreAttaque += evaluerLigne(r, c, 2, dr, dc);
+                        scoreDefense += evaluerLigne(r, c, 1, dr, dc);
+                    }
+                    
+                    // On privilégie un tout petit peu la défense pour contrer le joueur
+                    let scoreTotal = scoreAttaque + (scoreDefense * 1.2);
+
+                    // Si on est au premier coup et que le centre est presque vide, on se rapproche
+                    if(scoreTotal === 0 && r > 4 && r < 10 && c > 4 && c < 10) scoreTotal += 1;
+
+                    if(scoreTotal > meilleurScore) {
+                        meilleurScore = scoreTotal; meilleursCoups = [[r, c]];
+                    } else if (scoreTotal === meilleurScore && scoreTotal > 0) {
+                        meilleursCoups.push([r, c]);
+                    }
+                }
+            }
+
+            // Si le plateau est totalement vide (IA joue en premier)
+            if(meilleursCoups.length === 0) meilleursCoups = [[7,7]];
+
+            let [fr, fc] = meilleursCoups[Math.floor(Math.random() * meilleursCoups.length)];
+            
+            placerPierre(fr, fc, 2);
+            let gagnant = verifierVictoire(fr, fc, 2);
+            
+            if(gagnant) { terminerPartie(gagnant); return; }
+
+            currentPlayer = 1; gameActive = true;
+            document.getElementById('game-status').textContent = "À Noir de jouer !";
+            document.getElementById('game-status').style.color = "#8b5cf6";
+        }
+
+        function terminerPartie(gagnant) {
+            gameActive = false;
+            let status = document.getElementById('game-status');
+            if(gagnant === 1) {
+                status.textContent = "🏆 VICTOIRE ! Splendide alignement !"; status.style.color = "#10b981";
+                if(modeJeu === 'ia') sauverXP(20);
+            } else {
+                status.textContent = modeJeu === 'ia' ? "💀 Défaite... L'IA a été plus rapide." : "🏆 Victoire du Joueur 2 (Blanc) !";
+                status.style.color = "#ef4444";
+            }
+        }
+
+        // --- COURS / MASTERCLASS ---
+        function switchTab(tabId) {
+            document.getElementById('btn-tab-match').classList.remove('actif'); document.getElementById('btn-tab-class').classList.remove('actif');
+            document.getElementById('tab-match').classList.remove('actif'); document.getElementById('tab-class').classList.remove('actif');
+            document.getElementById(`btn-tab-${tabId}`).classList.add('actif'); document.getElementById(`tab-${tabId}`).classList.add('actif');
+        }
+
+        function lancerLecon(id) {
+            document.getElementById('lesson-menu').style.display = "none"; document.getElementById('lesson-active-area').style.display = "flex";
+            let txt = id === 'menace3' ? 
+                "<b>La Règle du '3 Ouvert'</b><br><br>Si votre adversaire possède 3 pierres alignées et que les deux extrémités de cette ligne sont vides, vous êtes en danger de mort.<br><br>S'il joue à l'une des extrémités, il passera à '4 Ouvert', ce qui signifie qu'il gagnera forcément au tour d'après (car vous ne pourrez bloquer qu'un seul des deux côtés).<br><br>👉 <b>Dès que l'adversaire aligne 3 pierres ouvertes, bloquez l'un des côtés immédiatement !</b>" :
+                "<b>Créer une Fourchette</b><br><br>La technique ultime au Gomoku est de poser une pierre qui crée simultanément <b>deux lignes de 3 (ou deux lignes de 4) en même temps</b>.<br><br>L'adversaire ne pouvant jouer qu'une seule pierre à son tour, il ne pourra bloquer qu'une seule de vos deux lignes. Vous gagnerez inévitablement sur l'autre !";
+            document.getElementById('lesson-instructions').innerHTML = txt;
+        }
+
+        function quitterLecon() { document.getElementById('lesson-menu').style.display = "block"; document.getElementById('lesson-active-area').style.display = "none"; }
+
+        chargerDonnees();
+    </script>
+</body>
+</html>
