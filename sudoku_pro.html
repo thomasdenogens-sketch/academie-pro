@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sudoku Master - Concentration & Logique</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;700;900&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; 
+        }
+        
+        .container { max-width: 950px; width: 100%; background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { color: #f8fafc; font-size: 1.8rem; font-weight: 900; }
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .btn-retour:hover { background: #475569; }
+        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #38bdf8; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        .workspace { display: flex; gap: 30px; justify-content: center; align-items: flex-start; flex-wrap: wrap; margin-top: 10px; }
+
+        /* --- LE GRILLE DU SUDOKU --- */
+        #sudoku-grid {
+            display: grid; grid-template-columns: repeat(9, 1fr);
+            width: 100%; max-width: 420px; aspect-ratio: 1;
+            background: #334155; border: 4px solid #334155; border-radius: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+        .cell {
+            background: #1e293b; display: flex; justify-content: center; align-items: center;
+            font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: 700; color: #38bdf8;
+            cursor: pointer; border: 1px solid #0f172a; position: relative;
+        }
+        /* Bordures épaisses des blocs 3x3 */
+        .cell:nth-child(3n) { border-right: 3px solid #334155; }
+        .cell:nth-child(9n) { border-right: none; }
+        #sudoku-grid > .cell:nth-child(js-row-thick) { border-bottom: 3px solid #334155; }
+        
+        /* Épaississement horizontal manuel */
+        .b-bottom { border-bottom: 3px solid #334155 !important; }
+        
+        .cell.fixed { color: #94a3b8; background: #0f172a; cursor: not-allowed; }
+        .cell.selected { background: rgba(56, 189, 248, 0.2) !important; box-shadow: inset 0 0 5px #38bdf8; }
+        .cell.error { color: #f87171 !important; background: rgba(248, 113, 113, 0.1); }
+
+        /* --- CLAVIER NUMÉRIQUE VISUEL --- */
+        .control-panel { flex: 1; min-width: 280px; max-width: 320px; display: flex; flex-direction: column; gap: 20px; }
+        .timer-box { background: #0f172a; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #334155; font-family: 'Fira Code', monospace; font-size: 1.4rem; color: #a7f3d0; }
+        
+        .num-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .num-btn { background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 15px; font-family: 'Fira Code', monospace; font-size: 1.3rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.1s; }
+        .num-btn:hover { background: #334155; border-color: #38bdf8; }
+        .num-btn.erase { background: #7f1d1d; color: #fca5a5; grid-column: span 3; padding: 10px; font-size: 1rem; border-color: #991b1b;}
+        .num-btn.erase:hover { background: #991b1b; }
+
+        .difficulty-bar { display: flex; gap: 10px; width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>🧩 Sudoku Master</h1>
+            <div class="xp-badge" id="hud-xp">XP: ...</div>
+        </div>
+
+        <div class="workspace">
+            <div id="sudoku-grid"></div>
+
+            <div class="control-panel">
+                <div class="timer-box" id="timer-display">⏱️ 00:00</div>
+                
+                <div class="num-pad">
+                    <button class="num-btn" onclick="entrerChiffre(1)">1</button>
+                    <button class="num-btn" onclick="entrerChiffre(2)">2</button>
+                    <button class="num-btn" onclick="entrerChiffre(3)">3</button>
+                    <button class="num-btn" onclick="entrerChiffre(4)">4</button>
+                    <button class="num-btn" onclick="entrerChiffre(5)">5</button>
+                    <button class="num-btn" onclick="entrerChiffre(6)">6</button>
+                    <button class="num-btn" onclick="entrerChiffre(7)">7</button>
+                    <button class="num-btn" onclick="entrerChiffre(8)">8</button>
+                    <button class="num-btn" onclick="entrerChiffre(9)">9</button>
+                    <button class="num-btn erase" onclick="entrerChiffre(0)">❌ Effacer la case</button>
+                </div>
+
+                <div class="difficulty-bar">
+                    <select id="select-diff" onchange="genererNouvelleGrille()" style="background:#0f172a; color:white; border:1px solid #334155; padding:10px; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;">
+                        <option value="easy" selected>🟢 Mode : Facile (+10 XP)</option>
+                        <option value="medium">🟠 Mode : Intermédiaire (+20 XP)</option>
+                        <option value="hard">🔴 Mode : Diabolique (+35 XP)</option>
+                    </select>
+                </div>
+                <a href="index.html" class="btn-retour" style="text-align: center; background:#38bdf8; color:#0f172a;">Hub Principal</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        let xpPro = 0;
+
+        // Grille de base valide que nous allons mélanger
+        const SOLUTION_BASE = [
+            [5,3,4,6,7,8,9,1,2], [6,7,2,1,9,5,3,4,8], [1,9,8,3,4,2,5,6,7],
+            [8,5,9,7,6,1,4,2,3], [4,2,6,8,5,3,7,9,1], [7,1,3,9,2,4,8,5,6],
+            [9,6,1,5,3,7,2,8,4], [2,8,7,4,1,9,6,3,5], [3,4,5,2,8,6,1,7,9]
+        ];
+
+        let grilleSolution = [], grilleJeu = [], cellSelectionnee = null;
+        let tempsSeconds = 0, timerInterval = null, jeuActif = false;
+
+        async function chargerDonnees() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}scores/parent/sudokuPro.json`);
+                let data = await res.json(); xpPro = data ? (parseInt(data.xp) || 0) : 0;
+                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            } catch(e) {}
+            genererNouvelleGrille();
+        }
+
+        async function sauverXP(points) {
+            xpPro += points; document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+            await fetch(`${FIREBASE_URL}scores/parent/sudokuPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        }
+
+        function genererNouvelleGrille() {
+            clearInterval(timerInterval);
+            tempsSeconds = 0; jeuActif = true;
+            document.getElementById('timer-display').textContent = "⏱️ 00:00";
+            
+            // Lancer le chrono
+            timerInterval = setInterval(() => {
+                tempsSeconds++;
+                let m = Math.floor(tempsSeconds / 60).toString().padStart(2, '0');
+                let s = (tempsSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').textContent = `⏱️ ${m}:${s}`;
+            }, 1000);
+
+            // Algorithme de brassage mathématique du Sudoku
+            grilleSolution = JSON.parse(JSON.stringify(SOLUTION_BASE));
+            // Mélanger les nombres (Ex: échanger les 1 et les 5 partout)
+            for(let i=0; i<10; i++) {
+                let n1 = Math.floor(Math.random()*9)+1; let n2 = Math.floor(Math.random()*9)+1;
+                if(n1 !== n2) {
+                    for(let r=0; r<9; r++) for(let c=0; c<9; c++) {
+                        if(grilleSolution[r][c] === n1) grilleSolution[r][c] = n2;
+                        else if(grilleSolution[r][c] === n2) grilleSolution[r][c] = n1;
+                    }
+                }
+            }
+
+            // Copie pour le jeu
+            grilleJeu = JSON.parse(JSON.stringify(grilleSolution));
+            
+            // Masquer les cases selon la difficulté
+            let diff = document.getElementById('select-diff').value;
+            let casesAMasquer = diff === 'easy' ? 30 : (diff === 'medium' ? 45 : 56);
+
+            while(casesAMasquer > 0) {
+                let r = Math.floor(Math.random()*9); let c = Math.floor(Math.random()*9);
+                if(grilleJeu[r][c] !== 0) { grilleJeu[r][c] = 0; casesAMasquer--; }
+            }
+
+            construireGrilleHTML();
+        }
+
+        function construireGrilleHTML() {
+            const gridDiv = document.getElementById('sudoku-grid');
+            gridDiv.innerHTML = ''; cellSelectionnee = null;
+
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if(r === 2 || r === 5) cell.classList.add('b-bottom'); // Lignes épaisses horizontales
+
+                    if(grilleJeu[r][c] !== 0) {
+                        cell.textContent = grilleJeu[r][c];
+                        cell.classList.add('fixed');
+                    } else {
+                        cell.onclick = () => selectionnerCell(r, c, cell);
+                    }
+                    cell.id = `cell-${r}-${c}`;
+                    gridDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function selectionnerCell(r, c, element) {
+            if(!jeuActif) return;
+            document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
+            cellSelectionnee = {r, c, el: element};
+            element.classList.add('selected');
+        }
+
+        function entrerChiffre(num) {
+            if(!cellSelectionnee || !jeuActif) return;
+            let r = cellSelectionnee.r; let c = cellSelectionnee.c;
+
+            if(num === 0) { // Bouton Effacer
+                grilleJeu[r][c] = 0;
+                cellSelectionnee.el.textContent = '';
+                cellSelectionnee.el.classList.remove('error');
+                return;
+            }
+
+            grilleJeu[r][c] = num;
+            cellSelectionnee.el.textContent = num;
+
+            // Vérification d'erreur immédiate (Option Coach)
+            if(num !== grilleSolution[r][c]) {
+                cellSelectionnee.el.classList.add('error');
+            } else {
+                cellSelectionnee.el.classList.remove('error');
+                verifierSiGagne();
+            }
+        }
+
+        function verifierSiGagne() {
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    if(grilleJeu[r][c] !== grilleSolution[r][c]) return; // Pas encore gagné
+                }
+            }
+            // Victoire !
+            jeuActif = false; clearInterval(timerInterval);
+            let diff = document.getElementById('select-diff').value;
+            let points = diff === 'easy' ? 10 : (diff === 'medium' ? 20 : 35);
+            
+            document.getElementById('timer-display').textContent = "🎉 GAGNÉ !";
+            sauverXP(points);
+        }
+
+        // Capter les touches du clavier physique
+        document.addEventListener('keydown', (e) => {
+            if(!cellSelectionnee || !jeuActif) return;
+            if(e.key >= '1' && e.key <= '9') entrerChiffre(parseInt(e.key));
+            if(e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') entrerChiffre(0);
+        });
+
+        chargerDonnees();
+    </script>
+</body>
+</html>

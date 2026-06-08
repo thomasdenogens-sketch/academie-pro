@@ -42,7 +42,7 @@
         
         .app-stats { background: #0f172a; padding: 10px; border-radius: 6px; font-size: 0.85rem; color: #cbd5e1; font-family: monospace; display: flex; justify-content: space-between; }
 
-        /* --- STYLES DU POP-UP DE FIN DE SEMAINE --- */
+        /* POP-UP FIN DE SEMAINE */
         #popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px);
@@ -88,14 +88,14 @@
             <a href="echecs_pro.html" class="app-card">
                 <div class="app-icon">♞</div>
                 <div class="app-title">Échecs : Analyse Pro</div>
-                <div class="app-desc">Affrontez le moteur Stockfish à haut niveau. Mode analyse, ouvertures complexes et évaluation en temps réel.</div>
+                <div class="app-desc">Affrontez l'ordinateur à haut niveau. Mode analyse, ouvertures complexes et évaluation en temps réel.</div>
                 <div class="app-stats"><span id="stat-echecs-xp">XP: --</span></div>
             </a>
 
             <a href="othello_pro.html" class="app-card">
                 <div class="app-icon">⚪⚫</div>
                 <div class="app-title">Othello : Master</div>
-                <div class="app-desc">Entraînez-vous à anticiper les coups et à contrôler les coins. Jouable en solo contre l'IA ou à deux.</div>
+                <div class="app-desc">Entraînez-vous à anticiper les coups et à contrôler les coins. Jouable en solo ou en duel familial.</div>
                 <div class="app-stats"><span id="stat-othello-xp">XP: --</span></div>
             </a>
 
@@ -118,6 +118,13 @@
                 <div class="app-title">Gomoku : 5 Alignés</div>
                 <div class="app-desc">Le célèbre morpion japonais sur un grand plateau. Créez des doubles attaques et anticipez les blocages.</div>
                 <div class="app-stats"><span id="stat-gomoku-xp">XP: --</span></div>
+            </a>
+
+            <a href="sudoku_pro.html" class="app-card">
+                <div class="app-icon">🧩</div>
+                <div class="app-title">Sudoku Master</div>
+                <div class="app-desc">Musclez votre logique déductive. Générateur infini de grilles, trois niveaux de difficulté et chronomètre.</div>
+                <div class="app-stats"><span id="stat-sudoku-xp">XP: --</span></div>
             </a>
         </div>
     </div>
@@ -147,10 +154,11 @@
                 let xpJacquet = data.jacquetPro ? (data.jacquetPro.xp || 0) : 0;
                 let xpMancala = data.mancalaPro ? (data.mancalaPro.xp || 0) : 0;
                 let xpGomoku = data.gomokuPro ? (data.gomokuPro.xp || 0) : 0;
+                let xpSudoku = data.sudokuPro ? (data.sudokuPro.xp || 0) : 0;
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
                 let dactyloAcc = data.dactyloPro ? (data.dactyloPro.acc || 0) : 0;
 
-                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + (dactyloRecord * 10);
+                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + xpSudoku + (dactyloRecord * 10);
 
                 document.getElementById('total-xp').textContent = `XP Globale: ${totalXp}`;
                 document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
@@ -158,22 +166,19 @@
                 document.getElementById('stat-jacquet-xp').textContent = `XP: ${xpJacquet}`;
                 document.getElementById('stat-mancala-xp').textContent = `XP: ${xpMancala}`;
                 document.getElementById('stat-gomoku-xp').textContent = `XP: ${xpGomoku}`;
+                document.getElementById('stat-sudoku-xp').textContent = `XP: ${xpSudoku}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
                 document.getElementById('stat-dactylo-acc').textContent = `Prc: ${dactyloAcc}%`;
 
             } catch(e) { console.error("Erreur Cloud", e); }
         }
 
-        // --- GESTION DU POP-UP INTELLIGENT ---
         function verifierFinDeSemaine() {
             const jourActuel = new Date().getDay(); // 0 = Dimanche, 5 = Vendredi, 6 = Samedi
-            const dejaVu = sessionStorage.getItem('popupStatsVu'); // Pour ne pas harceler si on recharge la page
-
-            // Si on est le week-end (Vendredi, Samedi ou Dimanche) et qu'on ne l'a pas encore fermé cette session
+            const dejaVu = sessionStorage.getItem('popupStatsVu');
             if ((jourActuel === 0 || jourActuel === 5 || jourActuel === 6) && !dejaVu) {
                 const overlay = document.getElementById('popup-overlay');
                 overlay.style.display = 'flex';
-                // Petite animation fluide
                 setTimeout(() => {
                     overlay.style.opacity = '1';
                     document.querySelector('.popup-box').style.transform = 'translateY(0)';
@@ -185,7 +190,7 @@
             const overlay = document.getElementById('popup-overlay');
             overlay.style.opacity = '0';
             document.querySelector('.popup-box').style.transform = 'translateY(20px)';
-            sessionStorage.setItem('popupStatsVu', 'true'); // On mémorise qu'on l'a fermé
+            sessionStorage.setItem('popupStatsVu', 'true');
             setTimeout(() => { overlay.style.display = 'none'; }, 300);
         }
 
