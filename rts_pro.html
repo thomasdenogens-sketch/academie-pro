@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dune V4 - Fog of War & Construction</title>
+    <title>Dune V4 - Fix Moteur Physique</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
@@ -49,7 +49,7 @@
 </head>
 <body>
 
-    <h2 style="margin-bottom: 10px; color: #f59e0b;">Moteur Arrakis - V4</h2>
+    <h2 style="margin-bottom: 10px; color: #f59e0b;">Moteur Arrakis - V4.1 (Physics Fixed)</h2>
     
     <div class="dos-container">
         <div id="game-container"></div>
@@ -67,8 +67,8 @@
             <button class="dos-btn" onclick="setBuildMode(null)" style="text-align: center; color: #f87171;">❌ Annuler Ordre</button>
 
             <div class="instructions" style="margin-top: auto;">
-                <b>Clic Gauche</b> : Sélectionner tank / Poser bâtiment.<br><br>
-                <b>Clic Droit</b> : Déplacer le tank pour explorer le brouillard de guerre.
+                <b>Clic Gauche</b> : Sélectionner le tank (il clignotera en vert) / Poser un bâtiment.<br><br>
+                <b>Clic Droit</b> : Déplacer le tank dans le noir pour effacer le brouillard.
             </div>
             
             <a href="index.html" class="dos-btn" style="text-align:center; text-decoration:none; margin-top:10px; background:#07090c;">Quitter</a>
@@ -76,12 +76,10 @@
     </div>
 
     <script>
-        // --- VARIABLES GLOBALES PARTAGÉES ---
         let credits = 150;
         let buildMode = null;
-        let updateCreditsUI; // Fonction pour mettre à jour l'affichage HTML depuis Phaser
+        let updateCreditsUI;
 
-        // --- GESTION DU MENU HTML ---
         function setBuildMode(mode) {
             buildMode = mode;
             document.getElementById('btn-concrete').classList.remove('active');
@@ -89,165 +87,162 @@
             if (mode) document.getElementById(`btn-${mode}`).classList.add('active');
         }
 
-        // --- CONFIGURATION PHASER ---
         const TILE_SIZE = 32;
-        const MAP_WIDTH = 22;  // 704px
-        const MAP_HEIGHT = 18; // 576px
+        const MAP_WIDTH = 22;  
+        const MAP_HEIGHT = 18; 
 
+        // --- LA CONFIGURATION CRUCIALE CORRIGÉE AVEC LE MOTEUR ARCADE PHYSICS ---
         const config = {
-            type: Phaser.AUTO, width: MAP_WIDTH * TILE_SIZE, height: MAP_HEIGHT * TILE_SIZE,
-            parent: 'game-container', backgroundColor: '#000000',
+            type: Phaser.AUTO, 
+            width: MAP_WIDTH * TILE_SIZE, 
+            height: MAP_HEIGHT * TILE_SIZE,
+            parent: 'game-container', 
+            backgroundColor: '#000000',
+            physics: {
+                default: 'arcade',
+                arcade: { gravity: { y: 0 }, debug: false }
+            },
             scene: { preload: preload, create: create, update: update }
         };
 
         const game = new Phaser.Game(config);
 
-        let mapData = []; // 0=Sable, 1=Roche, 2=Béton, 3=Raffinerie
-        let fogMap = [];  // Contient les carrés noirs du brouillard
+        let mapData = []; 
+        let fogMap = [];  
         let tank;
         let selectedUnit = null;
 
         function preload() {
             this.cameras.main.setRoundPixels(true);
             
-            // Chargement de VOS images GitHub
+            // 1. SÉCURITÉ : On dessine des textures colorées par défaut en mémoire.
+            // Si vos images GitHub ont un problème, ces couleurs s'afficheront au lieu de laisser un écran vide.
+            let textures = ['ground_sand', 'ground_rock', 'unit_tank'];
+            let colors = [0xdcb35c, 0x555555, 0x2563eb]; // Sable jaune, roche grise, tank bleu
+            
+            for(let i=0; i<textures.length; i++) {
+                let gfx = this.make.graphics({x: 0, y: 0, add: false});
+                gfx.fillStyle(colors[i]);
+                gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+                // Si c'est le tank, on lui dessine un petit canon blanc pour le reconnaître
+                if(textures[i] === 'unit_tank') {
+                    gfx.fillStyle(0xffffff); gfx.fillRect(16, 12, 16, 8);
+                }
+                gfx.generateTexture(textures[i], TILE_SIZE, TILE_SIZE);
+            }
+
+            // 2. CHARGEMENT DE VOS VRAIES IMAGES
+            // Si le fichier existe, Phaser écrasera automatiquement le carré de couleur ci-dessus.
             this.load.image('ground_sand', 'assets/sable.png');
             this.load.image('ground_rock', 'assets/rocher.png');
             this.load.image('unit_tank', 'assets/tank.png');
-
-            // Images de secours automatiques si GitHub met du temps à actualiser
-            this.load.on('loaderror', (fileObj) => {
-                let gfx = this.make.graphics({x: 0, y: 0, add: false});
-                if(fileObj.key === 'ground_sand') gfx.fillStyle(0xdcb35c);
-                else if(fileObj.key === 'ground_rock') gfx.fillStyle(0x7c7568);
-                else gfx.fillStyle(0x2563eb); 
-                gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
-                gfx.generateTexture(fileObj.key, TILE_SIZE, TILE_SIZE);
-            });
         }
 
         function create() {
             this.input.mouse.disableContextMenu();
 
-            // 1. GÉNÉRATION DE LA CARTE GÉOLOGIQUE
+            // 1. DESSIN DU SOL
             for (let y = 0; y < MAP_HEIGHT; y++) {
                 mapData[y] = [];
                 for (let x = 0; x < MAP_WIDTH; x++) {
-                    // Création d'un grand plateau rocheux en bas à gauche pour la base
-                    if (y > 10 && x < 8) mapData[y][x] = 1; // Roche
-                    else mapData[y][x] = 0; // Sable
+                    if (y > 10 && x < 8) mapData[y][x] = 1; // Zone de Roche en bas à gauche
+                    else mapData[y][x] = 0; // Le reste est du Sable
                     
                     let texture = mapData[y][x] === 1 ? 'ground_rock' : 'ground_sand';
                     let tile = this.add.image(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, texture);
-                    tile.setDepth(0); // Fond
+                    tile.setDepth(0);
                 }
             }
 
-            // 2. GÉNÉRATION DU BROUILLARD DE GUERRE (FOG OF WAR)
+            // 2. POSE DU BROUILLARD DE GUERRE NOIR
             for (let y = 0; y < MAP_HEIGHT; y++) {
                 fogMap[y] = [];
                 for (let x = 0; x < MAP_WIDTH; x++) {
-                    // On pose un carré noir absolu sur chaque case
                     let fog = this.add.rectangle(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE, TILE_SIZE, 0x000000);
-                    fog.setDepth(10); // Tout au-dessus
+                    fog.setDepth(10); 
                     fogMap[y][x] = fog;
                 }
             }
 
-            // 3. PLACEMENT DU TANK
-            tank = this.add.sprite(3 * TILE_SIZE + TILE_SIZE/2, 14 * TILE_SIZE + TILE_SIZE/2, 'unit_tank');
+            // 3. CRÉATION DU TANK AVEC LA PHYSIQUE SÉCURISÉE
+            tank = this.physics.add.sprite(3 * TILE_SIZE + TILE_SIZE/2, 14 * TILE_SIZE + TILE_SIZE/2, 'unit_tank');
             tank.setDepth(5);
             tank.setInteractive();
             tank.targetX = tank.x; tank.targetY = tank.y; tank.isMoving = false;
 
-            // Lier la mise à jour des crédits avec l'HTML
             updateCreditsUI = () => {
                 document.getElementById('credits-ui').innerText = credits.toString().padStart(4, '0');
             };
             updateCreditsUI();
 
-            // 4. GESTION DES CLICS SOURIS (SÉLECTION, MOUVEMENT, CONSTRUCTION)
+            // 4. INTERACTION SOURIS COMPLÈTE
             this.input.on('pointerdown', (pointer) => {
                 let tx = Math.floor(pointer.x / TILE_SIZE);
                 let ty = Math.floor(pointer.y / TILE_SIZE);
 
                 if (pointer.leftButtonDown()) {
-                    
                     if (buildMode) {
-                        // SÉCURITÉ : Interdit de construire dans le brouillard
-                        if (fogMap[ty] && fogMap[ty][tx]) {
-                            alert("Brouillard de guerre : Vous devez d'abord explorer cette zone !");
-                            return;
-                        }
+                        // Empêcher de construire dans le noir
+                        if (fogMap[ty] && fogMap[ty][tx]) { return; }
 
-                        // LOGIQUE DE CONSTRUCTION
-                        if (buildMode === 'concrete') {
-                            if (mapData[ty][tx] === 1 && credits >= 10) { // Sur la ROCHE (1)
-                                mapData[ty][tx] = 2; credits -= 10;
-                                let concrete = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE, TILE_SIZE, 0x4b5563);
-                                concrete.setStrokeStyle(1, 0x1f2937); concrete.setDepth(1);
-                                updateCreditsUI(); setBuildMode(null);
-                            } else {
-                                alert("ERREUR : Le béton coûte 10$ et ne peut être posé QUE sur la roche grise.");
-                            }
+                        if (buildMode === 'concrete' && mapData[ty][tx] === 1 && credits >= 10) {
+                            mapData[ty][tx] = 2; credits -= 10;
+                            let concrete = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE, TILE_SIZE, 0x374151);
+                            concrete.setStrokeStyle(1, 0x1f2937); concrete.setDepth(1);
+                            updateCreditsUI(); setBuildMode(null);
                         } 
-                        else if (buildMode === 'refinery') {
-                            if (mapData[ty][tx] === 2 && credits >= 80) { // Sur le BÉTON (2)
-                                mapData[ty][tx] = 3; credits -= 80;
-                                let refinery = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE-6, TILE_SIZE-6, 0x1e40af);
-                                refinery.setStrokeStyle(2, 0x60a5fa); refinery.setDepth(2);
-                                updateCreditsUI(); setBuildMode(null);
-                            } else {
-                                alert("ERREUR : L'usine coûte 80$ et nécessite des fondations en béton au préalable.");
-                            }
+                        else if (buildMode === 'refinery' && mapData[ty][tx] === 2 && credits >= 80) {
+                            mapData[ty][tx] = 3; credits -= 80;
+                            let refinery = this.add.rectangle(tx*TILE_SIZE+16, ty*TILE_SIZE+16, TILE_SIZE-6, TILE_SIZE-6, 0x1e40af);
+                            refinery.setStrokeStyle(2, 0x60a5fa); refinery.setDepth(2);
+                            updateCreditsUI(); setBuildMode(null);
                         }
                     } else {
-                        // SÉLECTION DU TANK
-                        let dx = Math.abs(pointer.x - tank.x);
-                        let dy = Math.abs(pointer.y - tank.y);
-                        if (dx < TILE_SIZE && dy < TILE_SIZE) {
+                        // Clic gauche sur le Tank pour le sélectionner
+                        let distanceAuTank = Phaser.Math.Distance.Between(pointer.x, pointer.y, tank.x, tank.y);
+                        if (distanceAuTank < TILE_SIZE) {
                             selectedUnit = tank;
-                            tank.setTint(0x4ade80); // Vert brillant
+                            tank.setTint(0x4ade80); // Coloration verte de sélection
+                        } else {
+                            // Clic dans le vide : on désélectionne
+                            selectedUnit = null;
+                            tank.clearTint();
                         }
                     }
-
-                } else if (pointer.rightButtonDown() && selectedUnit) {
-                    // ORDRE DE MOUVEMENT
-                    let destX = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
-                    let destY = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
-                    selectedUnit.targetX = destX;
-                    selectedUnit.targetY = destY;
-                    selectedUnit.isMoving = true;
+                } 
+                else if (pointer.rightButtonDown() && selectedUnit) {
+                    // Clic droit : Donner l'ordre de bouger
+                    tank.targetX = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
+                    tank.targetY = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE/2;
+                    tank.isMoving = true;
                 }
             });
         }
 
         function update() {
-            // Déplacement du tank
             if (tank.isMoving) {
-                const speed = 2.5;
+                const speed = 120; // Vitesse physique
                 let distance = Phaser.Math.Distance.Between(tank.x, tank.y, tank.targetX, tank.targetY);
 
-                if (distance > speed) {
-                    this.physics.moveTo(tank, tank.targetX, tank.targetY, speed * 60);
+                if (distance > 4) {
+                    this.physics.moveTo(tank, tank.targetX, tank.targetY, speed);
                 } else {
+                    tank.body.setVelocity(0, 0); // Stop net
                     tank.x = tank.targetX; tank.y = tank.targetY;
-                    tank.body.reset(tank.x, tank.y); // Stop physics
                     tank.isMoving = false;
                 }
             }
 
-            // GESTION DU BROUILLARD DE GUERRE (Champ de vision autour du tank)
+            // DISSIPATION DU BROUILLARD AUTOUR DU TANK
             let tankTx = Math.floor(tank.x / TILE_SIZE);
             let tankTy = Math.floor(tank.y / TILE_SIZE);
-            let visionRadius = 3; // Le tank voit à 3 cases autour de lui
+            let vision = 3; 
 
-            for (let y = tankTy - visionRadius; y <= tankTy + visionRadius; y++) {
-                for (let x = tankTx - visionRadius; x <= tankTx + visionRadius; x++) {
-                    // Si la case existe sur la carte et contient encore du brouillard
+            for (let y = tankTy - vision; y <= tankTy + vision; y++) {
+                for (let x = tankTx - vision; x <= tankTx + vision; x++) {
                     if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
                         if (fogMap[y][x]) {
-                            fogMap[y][x].destroy(); // On dissipe le brouillard
+                            fogMap[y][x].destroy();
                             fogMap[y][x] = null;
                         }
                     }
