@@ -2,99 +2,97 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trilogie RTS Rétro - Espace Pro</title>
+    <title>Trilogie RTS 1993 - Command & Control</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@700&family=VT323&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         
         body { 
-            font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; 
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; 
+            background-color: #05070a; color: #a3b3c2; 
+            font-family: 'VT323', monospace; font-size: 1.4rem;
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 20px;
         }
         
-        .container { max-width: 1050px; width: 100%; background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h1 { color: #f59e0b; font-size: 1.8rem; font-weight: 800; }
-        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; font-weight: 600;}
-        .btn-retour:hover { background: #475569; }
-        .xp-badge { font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.1rem; color: #f59e0b; background: #0f172a; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+        /* Style Interface PC-DOS 1993 */
+        .dos-container { 
+            width: 1000px; background: #1a1f26; 
+            border: 6px double #3a4659; border-radius: 4px; padding: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
 
-        .workspace { display: grid; grid-template-columns: 1fr 320px; gap: 25px; margin-top: 15px; }
-
-        /* --- LE CHAMP DE BATAILLE TACTIQUE --- */
-        .battlefield-panel { display: flex; flex-direction: column; gap: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 3px solid #3a4659; padding-bottom: 10px; }
         
-        #map-grid {
-            display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
-            width: 100%; aspect-ratio: 1; border: 4px solid #334155; border-radius: 8px; overflow: hidden;
-            background-color: #d97706; /* Par défaut Arrakis */
-            transition: background-color 0.5s ease;
+        .game-layout { display: flex; gap: 15px; }
+
+        /* Le Moniteur de jeu */
+        #gameCanvas { 
+            background: #000; border: 4px solid #252d3a; 
+            image-rendering: pixelated; /* Force le look rétro pixel-art */
+            cursor: crosshair;
         }
 
-        .cell {
-            border: 1px solid rgba(15, 23, 42, 0.15); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; font-size: 1.5rem; position: relative;
+        /* Panneau Militaire de Droite (Dune II Style) */
+        .sidebar-panel { 
+            flex: 1; background: #11141a; border: 4px solid #252d3a; 
+            padding: 15px; display: flex; flex-direction: column; gap: 15px;
         }
-        .cell-label { position: absolute; bottom: 2px; font-size: 0.55rem; color: rgba(255,255,255,0.6); font-family: monospace; }
 
-        /* --- PANNEAU DE COMMANDEMENT --- */
-        .control-panel { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .resource-box { background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 8px; text-align: center; }
-        .resource-title { font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; font-weight: bold; }
-        .resource-val { font-family: 'Fira Code', monospace; font-size: 1.6rem; font-weight: bold; color: #f59e0b; margin-top: 2px; }
+        .screen-text { font-family: 'Fira Code', monospace; font-size: 0.9rem; color: #38bdf8; background: #07090c; padding: 10px; border: 1px solid #252d3a; border-radius: 4px; text-transform: uppercase;}
+        .money-display { font-size: 1.8rem; color: #f59e0b; text-align: center; font-weight: bold; }
 
-        .btn-build { background: #1e293b; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; transition: 0.1s; }
-        .btn-build:hover:not(:disabled) { border-color: #f59e0b; background: #27272a; }
-        .btn-build:disabled { opacity: 0.4; cursor: not-allowed; }
+        .build-menu { display: flex; flex-direction: column; gap: 8px; }
+        .dos-btn { 
+            background: #252d3a; color: #e2e8f0; border: 2px solid #3a4659;
+            padding: 10px; font-family: 'VT323', monospace; font-size: 1.3rem;
+            cursor: pointer; text-align: left; transition: 0.1s; width: 100%;
+        }
+        .dos-btn:hover:not(:disabled) { background: #3a4659; color: #f59e0b; border-color: #f59e0b; }
+        .dos-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .dos-btn.active { background: #10b981; color: #0f172a; }
 
-        .btn-attack { background: #ef4444; color: #0f172a; border: none; padding: 15px; font-size: 1rem; font-weight: 800; border-radius: 8px; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: 0.2s;}
-        .btn-attack:hover { background: #dc2626; transform: translateY(-2px); }
-
-        /* Journal de guerre */
-        #war-log { background: #0f172a; border: 1px solid #334155; border-radius: 8px; height: 80px; padding: 10px; font-family: monospace; font-size: 0.8rem; overflow-y: auto; color: #94a3b8; line-height: 1.4; }
+        #log-dos { height: 90px; background: #07090c; border: 1px solid #252d3a; padding: 8px; font-family: monospace; font-size: 0.75rem; color: #849bb0; overflow-y: auto; }
+        select { background: #07090c; color: #f59e0b; border: 2px solid #3a4659; padding: 5px; font-family: 'VT323', monospace; font-size: 1.2rem; outline: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header">
-            <select id="universe-select" onchange="changerUnivers()" style="background:#0f172a; color:#f59e0b; border:1px solid #334155; padding:10px 15px; border-radius:8px; font-size:1.1rem; font-weight:800; cursor:pointer; outline:none;">
-                <option value="dune">🏜️ Monde I : Dune - Épice & Tanks</option>
-                <option value="warcraft">🌲 Monde II : Fantasy - Or & Épées</option>
-                <option value="starcraft">🌌 Monde III : Space Opera - Cristaux</option>
-            </select>
-            <div class="xp-badge" id="hud-xp">XP: ...</div>
+    <div class="dos-container">
+        <div class="top-bar">
+            <div>
+                <select id="universe-select" onchange="changerUnivers()">
+                    <option value="dune">🏜️ AMSTRAD/DOS : DUNE II (Arrakis)</option>
+                    <option value="warcraft">🌲 DOS-RETRO : WARCRAFT I (Azeroth)</option>
+                    <option value="starcraft">🌌 SCI-FI CLASSIC : STARCRAFT (Koprulu)</option>
+                </select>
+            </div>
+            <div style="color: #64748b; font-size: 1.1rem;">COMMAND & CONTROL MOTEUR v2.0</div>
+            <div style="color: #38bdf8;" id="hud-xp">XP PRO: --</div>
         </div>
 
-        <div class="workspace">
-            <div class="battlefield-panel">
-                <div id="map-grid"></div>
-                <div id="war-log"></div>
-            </div>
+        <div class="game-layout">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
 
-            <div class="control-panel">
-                <div class="resource-box">
-                    <div class="resource-title" id="lbl-money">CRÉDITS SOLAIRES</div>
-                    <div class="resource-val" id="val-money">100 ⚙️</div>
+            <div class="sidebar-panel">
+                <div class="screen-text">
+                    <div style="font-size:0.7rem; color:#64748b;">Statut Logistique</div>
+                    <div class="money-display" id="val-money">00000</div>
+                    <div id="lbl-money" style="text-align:center; font-size:0.75rem; margin-top:2px;">CREDITS</div>
                 </div>
 
-                <div style="font-size:0.8rem; font-weight:bold; color:#64748b; text-transform:uppercase;">Structures & Troupes</div>
-                <button class="btn-build" id="btn-harv" onclick="produireUnite('harv')">
-                    <span id="txt-btn-harv">🚜 Récolteur</span><span>50 ⚙️</span>
-                </button>
-                <button class="btn-build" id="btn-light" onclick="produireUnite('light')">
-                    <span id="txt-btn-light">💂 Soldat Léger</span><span>30 ⚙️</span>
-                </button>
-                <button class="btn-build" id="btn-heavy" onclick="produireUnite('heavy')">
-                    <span id="txt-btn-heavy">🚀 Tank de Siège</span><span>70 ⚙️</span>
-                </button>
-
-                <div style="margin-top: auto; display:flex; flex-direction:column; gap:10px;">
-                    <button class="btn-attack" onclick="ordonnerAssaut()">🚀 LANCER L'ASSAUT GÉNÉRAL</button>
-                    <a href="index.html" class="btn-retour" style="text-align: center; background:#334155; padding:12px;">Quitter le Poste</a>
+                <div style="font-size:1.1rem; color:#f59e0b; border-bottom:1px solid #252d3a; padding-bottom:2px;">Ordres de Construction</div>
+                <div class="build-menu">
+                    <button class="dos-btn" id="btn-b-concrete" onclick="setModePlacement('concrete')">🧱 Poser une Dalle Béton (10$)</button>
+                    <button class="dos-btn" id="btn-b-ref" onclick="setModePlacement('refinery')">🏭 Construire Raffinerie (80$)</button>
+                    <button class="dos-btn" id="btn-u-harv" onclick="formerUnite('harv')">🚜 Moissonneuse d'Épice (50$)</button>
+                    <button class="dos-btn" id="btn-u-combat" onclick="formerUnite('combat')">🪖 Unité de Combat (30$)</button>
                 </div>
+
+                <button class="dos-btn" style="background:#7f1d1d; border-color:#b91c1c; color:#fca5a5; text-align:center; margin-top:auto; font-weight:bold;" onclick="ordonnerAttaque()">🚀 LANCER L'ASSAUT SUR LA BASE ENNEMIE</button>
+                
+                <div id="log-dos"></div>
+                <a href="index.html" style="color:#64748b; text-align:center; text-decoration:none; font-size:1.1rem;">[ QUITTER LE POSTE TACTIQUE ]</a>
             </div>
         </div>
     </div>
@@ -103,229 +101,264 @@
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         let xpPro = 0;
 
-        // --- FICHE DE CONFIGURATION DES 3 UNIVERS ---
-        const CONFIG_UNIVERS = {
-            dune: {
-                bg: "#cc8833", resLabel: "CRÉDITS D'ÉPICE", iconRes: "🟧",
-                baseP: "🏰", baseE: "🦅", harv: "🚜", light: "💂", heavy: "🛞",
-                nameP: "Atreides", nameE: "Harkonnen"
-            },
-            warcraft: {
-                bg: "#15803d", resLabel: "RÉSERVES D'OR", iconRes: "🟨",
-                baseP: "🏯", baseE: "⛺", harv: "👨‍🌾", light: "⚔️", heavy: "💥",
-                nameP: "Humains", nameE: "Orcs"
-            },
-            starcraft: {
-                bg: "#090d16", resLabel: "MINÉRAUX RAFFINÉS", iconRes: "💎",
-                baseP: "🚀", baseE: "👾", harv: "🤖", light: "🔫", heavy: "🛸",
-                nameP: "Terrans", nameE: "Zergs"
-            }
+        // --- PALETTES GRAPHIQUES 1993 ---
+        const THEMES = {
+            dune: { sand: "#cfa353", rock: "#7c7568", spice: "#9c3a1e", p1: "#1e40af", p2: "#991b1b", textRes: "CREDITS EPICE" },
+            warcraft: { sand: "#22c55e", rock: "#4b5563", spice: "#eab308", p1: "#2563eb", p2: "#dc2626", textRes: "OR ACCUMULE" },
+            starcraft: { sand: "#0f172a", rock: "#334155", spice: "#06b6d4", p1: "#0284c7", p2: "#b91c1c", textRes: "CRISTAUX VESPENE" }
         };
 
-        let universActuel = 'dune';
-        let credits = 100, gameLoop = null;
-        
-        // Entités : { id, type, player (1=vous, 2=IA), pos: 0-99, hp }
-        let entities = [], entityIdCounter = 0;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const TILE_SIZE = 40; // Grille de 15x15 cases
+        const GRID_SIZE = 15;
+
+        let theme = THEMES.dune;
+        let mapGrid = []; // 0=Sable, 1=Roche, 2=Béton, 3=Épice
+        let credits = 150;
+        let structures = []; // { r, c, type, player }
+        let units = []; // { x, y, type, player, hp, targetR, targetC, state }
+        let currentPlacementMode = null; // 'concrete' ou 'refinery'
+        let loopInterval = null;
 
         async function chargerDonnees() {
             try {
                 let res = await fetch(`${FIREBASE_URL}scores/parent/rtsPro.json`);
                 let data = await res.json(); xpPro = data ? (parseInt(data.xp) || 0) : 0;
-                document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
+                document.getElementById('hud-xp').textContent = `XP PRO: ${xpPro}`;
             } catch(e) {}
-            lancerPartie();
+            demarrerJeu();
         }
 
-        async function sauverXP(points) {
-            xpPro += points; document.getElementById('hud-xp').textContent = `XP: ${xpPro}`;
-            await fetch(`${FIREBASE_URL}scores/parent/rtsPro.json`, { method: 'PUT', body: JSON.stringify({ xp: xpPro }) });
+        function demarrerJeu() {
+            clearInterval(loopInterval);
+            credits = 150; structures = []; units = []; currentPlacementMode = null;
+            
+            let uSelect = document.getElementById('universe-select').value;
+            theme = THEMES[uSelect];
+            document.getElementById('lbl-money').textContent = theme.textRes;
+
+            // 1. Génération de la carte géologique de Dune II
+            mapGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            // Placer de la roche pour les bases (En bas à gauche et en haut à droite)
+            for(let r=11; r<15; r++) for(let c=0; c<4; c++) mapGrid[r][c] = 1; 
+            for(let r=0; r<4; r++) for(let c=11; c<15; c++) mapGrid[r][c] = 1;
+            // Placer des champs d'épice au centre
+            for(let r=5; r<10; r++) for(let c=5; c<10; c++) if(Math.random() < 0.6) mapGrid[r][c] = 3;
+
+            // 2. Placer les QG originaux
+            structures.push({ r: 13, c: 1, type: "hq", player: 1, hp: 400 });
+            structures.push({ r: 1, c: 13, type: "hq", player: 2, hp: 400 });
+
+            // Donner une moissonneuse de départ
+            units.push({ x: 2, y: 12, type: "harv", player: 1, hp: 100, state: "idle", cargo: 0 });
+
+            logDos("Moteur Tactique initialisé. Construisez du béton sur la roche grise.");
+            
+            // Boucle principale (30 images par seconde pour des animations fluides)
+            loopInterval = setInterval(updateGame, 100);
+            render();
         }
 
-        function changerUnivers() {
-            universActuel = document.getElementById('universe-select').value;
-            logGuerre("切换 " + universActuel.toUpperCase());
-            lancerPartie();
-        }
+        function changerUnivers() { demarrerJeu(); }
 
-        function lancerPartie() {
-            clearInterval(gameLoop);
-            credits = 100; entities = []; entityIdCounter = 0;
-            
-            // Appliquer le style visuel de l'univers sélectionné
-            let cfg = CONFIG_UNIVERS[universActuel];
-            document.getElementById('map-grid').style.backgroundColor = cfg.bg;
-            document.getElementById('lbl-money').textContent = cfg.resLabel;
-            
-            // Injecter les deux QG (Vos coordonnées en bas à gauche = case 90, Ennemi en haut à droite = case 9)
-            entities.push({ id: entityIdCounter++, type: 'hq', player: 1, pos: 90, hp: 500 });
-            entities.push({ id: entityIdCounter++, type: 'hq', player: 2, pos: 9, hp: 500 });
-            
-            logGuerre(`⚡ Déploiement de l'univers : ${universActuel.toUpperCase()}. Préparez vos troupes !`);
-            
-            creerTerrainHTML();
-            actualiserInterface();
-            
-            // Démarrage du moteur en Temps Réel (1 tick par seconde)
-            gameLoop = setInterval(moteurRTS, 1000);
-        }
+        // --- MOTEUR DE RENDU GRAPHIQUE (PIXEL-ART RECONSTITUÉ) ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function creerTerrainHTML() {
-            const grid = document.getElementById('map-grid'); grid.innerHTML = '';
-            for(let i=0; i<100; i++) {
-                let cell = document.createElement('div'); cell.className = 'cell'; cell.id = `grid-${i}`;
-                
-                // Mettre un peu de ressources au milieu de la carte tactique
-                if([44, 45, 54, 55, 34, 35, 64, 65].includes(i)) {
-                    cell.setAttribute('data-resource', 'true');
-                }
-                
-                let lbl = document.createElement('span'); lbl.className = 'cell-label';
-                cell.appendChild(lbl); grid.appendChild(cell);
-            }
-            dessinerUnites();
-        }
+            // 1. Dessiner le sol (Sable, Roche, Béton, Épice)
+            for(let r=0; r<GRID_SIZE; r++) {
+                for(let c=0; c<GRID_SIZE; c++) {
+                    let type = mapGrid[r][c];
+                    if(type === 0) ctx.fillStyle = theme.sand;
+                    else if(type === 1) ctx.fillStyle = theme.rock;
+                    else if(type === 2) ctx.fillStyle = "#4b5563"; // Béton gris
+                    else if(type === 3) ctx.fillStyle = theme.spice;
 
-        function dessinerUnites() {
-            // Nettoyer les cases
-            let cfg = CONFIG_UNIVERS[universActuel];
-            for(let i=0; i<100; i++) {
-                let cell = document.getElementById(`grid-${i}`);
-                let lbl = cell.querySelector('.cell-label');
-                cell.textContent = ''; cell.appendChild(lbl);
-                
-                if(cell.getAttribute('data-resource') === 'true') {
-                    cell.textContent = cfg.iconRes; cell.appendChild(lbl);
+                    ctx.fillRect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    
+                    // Texture rétro (grille fine de pixels de l'époque)
+                    ctx.strokeStyle = "rgba(0,0,0,0.04)";
+                    ctx.strokeRect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
             }
-            
-            // Placer les entités vivantes
-            entities.forEach(ent => {
-                let cell = document.getElementById(`grid-${ent.pos}`);
-                if(!cell) return;
+
+            // 2. Dessiner les Structures (Look industriel 90's)
+            structures.forEach(str => {
+                ctx.fillStyle = str.player === 1 ? theme.p1 : theme.p2;
+                ctx.fillRect(str.c*TILE_SIZE+2, str.r*TILE_SIZE+2, TILE_SIZE-4, TILE_SIZE-4);
                 
-                let icone = "";
-                if(ent.type === 'hq') icone = ent.player === 1 ? cfg.baseP : cfg.baseE;
-                if(ent.type === 'harv') icone = cfg.harv;
-                if(ent.type === 'light') icone = cfg.light;
-                if(ent.type === 'heavy') icone = cfg.heavy;
+                // Dessin du toit/cheminée d'usine mécanique
+                ctx.fillStyle = "#1f2937";
+                ctx.fillRect(str.c*TILE_SIZE+8, str.r*TILE_SIZE+8, TILE_SIZE-16, TILE_SIZE-16);
                 
-                let textNode = document.createTextNode(icone);
-                cell.insertBefore(textNode, cell.firstChild);
+                // Label de structure
+                ctx.fillStyle = "#fff"; ctx.font = "12px monospace";
+                ctx.fillText(str.type.toUpperCase(), str.c*TILE_SIZE+6, str.r*TILE_SIZE+24);
+            });
+
+            // 3. Dessiner les Véhicules Militaires et Moissonneuses
+            units.forEach(u => {
+                let px = u.x * TILE_SIZE + TILE_SIZE/2;
+                let py = u.y * TILE_SIZE + TILE_SIZE/2;
+
+                ctx.fillStyle = u.player === 1 ? theme.p1 : theme.p2;
                 
-                // Barre de vie simplifiée
-                let lbl = cell.querySelector('.cell-label');
-                lbl.textContent = `${ent.player===1?'P1':'IA'}:${ent.hp}`;
-                lbl.style.color = ent.player === 1 ? '#38bdf8' : '#f87171';
+                if(u.type === 'harv') {
+                    // Moissonneuse rectangulaire lourde avec chenilles
+                    ctx.fillRect(px-12, py-10, 24, 20);
+                    ctx.fillStyle = "#f59e0b"; // Benne arrière
+                    ctx.fillRect(px-10, py-6, 10, 12);
+                } else {
+                    // Tank de combat avec tourelle pivotante
+                    ctx.fillRect(px-10, py-10, 20, 20);
+                    ctx.fillStyle = "#11141a"; // Tourelle centrale
+                    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
+                    // Canon orienté vers l'avant
+                    ctx.strokeStyle = "#11141a"; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px+8, py); ctx.stroke();
+                }
+
+                // Mini barre de vie rétro au-dessus de l'unité
+                ctx.fillStyle = "#ef4444"; ctx.fillRect(px-12, py-15, 24, 3);
+                ctx.fillStyle = "#10b981"; ctx.fillRect(px-12, py-15, (u.hp/100)*24, 3);
             });
         }
 
-        function produireUnite(type) {
-            let couts = { harv: 50, light: 30, heavy: 70 };
-            if(credits >= couts[type]) {
-                credits -= couts[type];
-                // Spawn au QG du joueur (case 90)
-                entities.push({ id: entityIdCounter++, type: type, player: 1, pos: 90, hp: type==='heavy'?120:(type==='harv'?80:50), mission: 'idle' });
-                logGuerre(`🔨 Production terminée : ${type.toUpperCase()}`);
-                actualiserInterface(); dessinerUnites();
-            }
-        }
+        // --- CHRONO ET LOGIQUE DU JEU (TEMPS RÉEL) ---
+        function updateGame() {
+            // Déplacement fluide des unités vers leurs cibles géographiques
+            units.forEach(u => {
+                if(u.state === "moving" || u.state === "attack" || u.state === "harvesting") {
+                    let targetX = u.targetC; let targetY = u.targetR;
+                    let dx = targetX - u.x; let dy = targetY - u.y;
+                    
+                    if(Math.abs(dx) > 0.1) u.x += Math.sign(dx) * 0.15;
+                    if(Math.abs(dy) > 0.1) u.y += Math.sign(dy) * 0.15;
 
-        function ordonnerAssaut() {
-            let troupes = entities.filter(e => e.player === 1 && (e.type === 'light' || e.type === 'heavy'));
-            if(troupes.length === 0) { logGuerre("⚠️ Aucune troupe disponible pour l'assaut !"); return; }
-            troupes.forEach(t => t.mission = 'attack');
-            logGuerre("🚀 ASSAUT GÉNÉRAL ! Vos armées marchent sur le QG ennemi !");
-        }
-
-        function moteurRTS() {
-            let cfg = CONFIG_UNIVERS[universActuel];
-            
-            // 1. REVENUE DES RÉCOLTEURS AUTOMATIQUES
-            entities.forEach(ent => {
-                if(ent.type === 'harv') {
-                    // Les récolteurs génèrent de l'argent s'ils sont vivants
-                    credits += ent.player === 1 ? 8 : 0;
-                }
-            });
-
-            // 2. IA ENNEMIE (Produit et attaque automatiquement toutes les 4 secondes)
-            if(Math.random() < 0.25) {
-                let typesIA = ['light', 'heavy'];
-                let choixType = typesIA[Math.floor(Math.random()*2)];
-                entities.push({ id: entityIdCounter++, type: choixType, player: 2, pos: 9, hp: choixType==='heavy'?120:50, mission: 'attack' });
-                logGuerre(`⚠️ Alerte : Les ${cfg.nameE} déploient un ${choixType.toUpperCase()} !`);
-            }
-
-            // 3. LOGIQUE DE DÉPLACEMENT VERS LA BASE ADVERSE
-            entities.forEach(ent => {
-                if(ent.type === 'hq' || ent.type === 'harv') return;
-                
-                if(ent.mission === 'attack') {
-                    let cible = ent.player === 1 ? 9 : 90; // Aller vers le QG opposé
-                    if(ent.pos !== cible) {
-                        // Progression pas à pas sur la grille linéaire (0 à 99)
-                        if(ent.pos < cible) ent.pos += Math.min(4, cible - ent.pos);
-                        else ent.pos -= Math.min(4, ent.pos - cible);
+                    // Arrivé à destination
+                    if(Math.abs(u.x - targetX) <= 0.2 && Math.abs(u.y - targetY) <= 0.2) {
+                        u.x = targetX; u.y = targetY;
+                        if(u.type === 'harv') LogiqueMoissonneuse(u);
+                        else LogiqueCombat(u);
                     }
                 }
             });
 
-            // 4. RÉSOLUTION DES COMBATS (Si deux unités ennemies sont proches)
-            for(let i=0; i<entities.length; i++) {
-                for(let j=i+1; j<entities.length; j++) {
-                    let e1 = entities[i]; let e2 = entities[j];
-                    if(e1.player !== e2.player && Math.abs(e1.pos - e2.pos) <= 5) {
-                        // Combat !
-                        let d1 = e1.type === 'heavy' ? 25 : 10;
-                        let d2 = e2.type === 'heavy' ? 25 : 10;
-                        e1.hp -= d2; e2.hp -= d1;
+            // Production de l'IA adverse (Elle attaque de temps en temps)
+            if(Math.random() < 0.02) {
+                units.push({ x: 13, y: 1, type: "combat", player: 2, hp: 100, state: "attack", targetR: 13, targetC: 1 });
+            }
+
+            // Gestion des collisions de combat rapproché
+            for(let i=0; i<units.length; i++) {
+                for(let j=i+1; j<units.length; j++) {
+                    let u1 = units[i]; let u2 = units[j];
+                    if(u1.player !== u2.player && Math.abs(u1.x - u2.x) < 0.8 && Math.abs(u1.y - u2.y) < 0.8) {
+                        u1.hp -= u2.type === 'combat' ? 4 : 1;
+                        u2.hp -= u1.type === 'combat' ? 4 : 1;
                     }
                 }
             }
 
-            // Élimination des pertes
-            let qgJoueurVivant = false, qgIAVivant = false;
-            entities = entities.filter(e => {
-                if(e.hp <= 0) {
-                    if(e.type !== 'hq') logGuerre(`💥 Unité détruite au secteur ${e.pos}`);
-                    return false;
-                }
-                if(e.type === 'hq' && e.player === 1) qgJoueurVivant = true;
-                if(e.type === 'hq' && e.player === 2) qgIAVivant = true;
-                return true;
+            // Filtrer les morts
+            units = units.filter(u => u.hp > 0);
+
+            // Gestion de l'économie passive (Raffinerie en fonction)
+            let nbRefineries = structures.filter(s => s.type === 'refinery' && s.player === 1).length;
+            if(Math.random() < 0.05) credits += nbRefineries * 10;
+
+            document.getElementById('val-money').textContent = credits.toString().padStart(5, '0');
+            render();
+        }
+
+        // --- COMPORTEMENT INTELLIGENT DE LA MOISSONNEUSE ---
+        function LogiqueMoissonneuse(u) {
+            if(u.state === "moving" && u.x === u.targetC && u.y === u.targetR) {
+                // Elle est sur le gisement d'épice. Elle charge la benne
+                u.state = "harvesting";
+                setTimeout(() => {
+                    u.cargo = 50;
+                    // Trouver la raffinerie la plus proche pour vider la cargaison
+                    let ref = structures.find(s => s.type === 'refinery' && s.player === u.player) || structures.find(s => s.type === 'hq' && s.player === u.player);
+                    u.targetR = ref.r; u.targetC = ref.c + 1; u.state = "moving";
+                }, 2000);
+            } else if(u.cargo > 0) {
+                // De retour à la base : On encaisse l'argent !
+                credits += u.cargo; u.cargo = 0;
+                logDos(`💰 Moissonneuse déchargée : +50$ injectés.`);
+                // Repartir au champ d'épice central automatique
+                u.targetR = 7; u.targetC = 7; u.state = "moving";
+            }
+        }
+
+        function LogiqueCombat(u) {
+            if(u.player === 2) { // L'IA attaque votre QG
+                let hq = structures.find(s => s.type === 'hq' && s.player === 1);
+                if(hq && Math.abs(u.x - hq.c) <= 1 && Math.abs(u.y - hq.r) <= 1) hq.hp -= 5;
+            }
+        }
+
+        // --- CAPTURE DES CLICS SOURIS SUR LA CARTE ---
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const c = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+            const r = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+
+            if(currentPlacementMode === 'concrete') {
+                if(mapGrid[r][c] === 1 && credits >= 10) { // Uniquement sur la roche grise
+                    mapGrid[r][c] = 2; credits -= 10;
+                    logDos("Béton posé avec succès. Zone sécurisée pour bâtiment.");
+                } else { alert("Erreur : Le béton doit être posé sur la roche grise !"); }
+                annulerPlacement();
+            } 
+            else if(currentPlacementMode === 'refinery') {
+                // Règle Dune II : Obligation de poser sur du béton pour ne pas abîmer l'usine
+                if(mapGrid[r][c] === 2 && credits >= 80) {
+                    structures.push({ r, c, type: 'refinery', player: 1, hp: 200 });
+                    credits -= 80; logDos("Raffinerie en ligne. Économie boostée.");
+                } else { alert("Règle de Dune II : Vous devez d'abord poser une dalle de béton avant d'y installer l'usine !"); }
+                annulerPlacement();
+            }
+            render();
+        });
+
+        function setModePlacement(mode) {
+            annulerPlacement();
+            currentPlacementMode = mode;
+            document.getElementById(`btn-b-${mode}`).classList.add('active');
+            logDos(`Sélectionnez une case sur la carte pour positionner la structure.`);
+        }
+
+        function annulerPlacement() {
+            currentPlacementMode = null;
+            document.getElementById('btn-b-concrete').classList.remove('active');
+            document.getElementById('btn-b-ref').classList.remove('active');
+        }
+
+        function formerUnite(type) {
+            if(type === 'harv' && credits >= 50) {
+                credits -= 50; // Envoyer automatiquement la moissonneuse au milieu de la map
+                units.push({ x: 1, y: 13, type: "harv", player: 1, hp: 100, state: "moving", targetR: 7, targetC: 7, cargo: 0 });
+            } else if(type === 'combat' && credits >= 30) {
+                credits -= 30;
+                units.push({ x: 1, y: 13, type: "combat", player: 1, hp: 100, state: "idle", targetR: 12, targetC: 3 });
+            }
+            render();
+        }
+
+        function ordonnerAttaque() {
+            let armee = units.filter(u => u.player === 1 && u.type === 'combat');
+            if(armee.length === 0) { logGuerre("⚠️ Aucune unité d'assaut blindée en attente !"); return; }
+            armee.forEach(u => {
+                u.state = "moving"; u.targetR = 1; u.targetC = 12; // Coordonnées de la base Harkonnen
             });
-
-            // 5. CONDITIONS DE FIN DE PARTIE
-            if(!qgIAVivant) {
-                clearInterval(gameLoop); logGuerre(`🏆 VICTOIRE ! La base des ${cfg.nameE} est anéantie !`);
-                sauverXP(30); return;
-            }
-            if(!qgJoueurVivant) {
-                clearInterval(gameLoop); logGuerre(`💀 DÉFAITE... Votre base a été rasée.`);
-                return;
-            }
-
-            actualiserInterface();
-            dessinerUnites();
+            logDos("🚀 Assaut ordonné ! Les chars font mouvement vers le nord-est.");
         }
 
-        function actualiserInterface() {
-            document.getElementById('val-money').textContent = `${credits} ⚙️`;
-            document.getElementById('btn-harv').disabled = credits < 50;
-            document.getElementById('btn-light').disabled = credits < 30;
-            document.getElementById('btn-heavy').disabled = credits < 70;
-            
-            // Renommer les boutons selon l'univers
-            let cfg = CONFIG_UNIVERS[universActuel];
-            document.getElementById('txt-btn-harv').textContent = `🚜 Recruter ${cfg.harv} (${cfg.harv==='🚜'?'Moissonneuse':'Ouvrier'})`;
-            document.getElementById('txt-btn-light').textContent = `⚔️ Entraîner ${cfg.light} (${cfg.light==='💂'?'Soldat':'Guerrier'})`;
-            document.getElementById('txt-btn-heavy').textContent = `🔥 Construire ${cfg.heavy}`;
-        }
-
-        function logGuerre(msg) {
-            const log = document.getElementById('war-log');
-            log.innerHTML += `<div>📡 ${msg}</div>`;
+        function logDos(msg) {
+            const log = document.getElementById('log-dos');
+            log.innerHTML += `<div>> ${msg}</div>`;
             log.scrollTop = log.scrollHeight;
         }
 
