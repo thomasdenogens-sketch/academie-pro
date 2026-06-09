@@ -68,6 +68,13 @@
 
         <h2 class="section-title">🧠 Entraînement Cognitif & Stratégie</h2>
         <div class="grid-apps">
+            <a href="pacman_pro.html" class="app-card" style="border-color: #eab308;">
+                <div class="app-icon">🟡</div>
+                <div class="app-title">Pac-Man : Réflexes</div>
+                <div class="app-desc">Le grand classique d'arcade. Entraînez votre prise de décision rapide, naviguez dans le labyrinthe et évitez les fantômes !</div>
+                <div class="app-stats" style="color:#eab308;"><span id="stat-pacman-xp">XP: --</span></div>
+            </a>
+
             <a href="rts_pro.html" class="app-card" style="border-color: #f59e0b;">
                 <div class="app-icon">🛸</div>
                 <div class="app-title">Trilogie RTS Rétro</div>
@@ -127,10 +134,13 @@
                 let xpMancala = data.mancalaPro ? (data.mancalaPro.xp || 0) : 0;
                 let xpGomoku = data.gomokuPro ? (data.gomokuPro.xp || 0) : 0;
                 let xpSudoku = data.sudokuPro ? (data.sudokuPro.xp || 0) : 0;
-                let xpRTS = data.rtsPro ? (data.rtsPro.xp || 0) : 0; // Ajout du RTS !
+                let xpRTS = data.rtsPro ? (data.rtsPro.xp || 0) : 0;
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
+                
+                // Extraction de l'XP Pac-Man
+                let xpPacman = data.pacmanPro ? (data.pacmanPro.xp || 0) : 0;
 
-                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + xpSudoku + xpRTS + (dactyloRecord * 10);
+                let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + xpSudoku + xpRTS + xpPacman + (dactyloRecord * 10);
 
                 document.getElementById('total-xp').textContent = `XP Globale: ${totalXp}`;
                 document.getElementById('stat-echecs-xp').textContent = `XP: ${xpEchecs}`;
@@ -141,6 +151,9 @@
                 document.getElementById('stat-sudoku-xp').textContent = `XP: ${xpSudoku}`;
                 document.getElementById('stat-rts-xp').textContent = `XP: ${xpRTS}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
+                
+                // Affichage XP Pac-Man
+                document.getElementById('stat-pacman-xp').textContent = `XP: ${xpPacman}`;
 
             } catch(e) { console.error("Erreur Cloud", e); }
         }
