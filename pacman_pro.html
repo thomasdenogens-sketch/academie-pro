@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man Pro - Entraînement</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; 
+            overflow: hidden;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 600px; position: relative;}
+        h1 { color: #eab308; font-size: 2.2rem; font-weight: 800; letter-spacing: 2px;}
+        
+        .hud { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #1e293b; padding: 15px 25px; border-radius: 12px; border: 1px solid #334155; 
+            width: 100%; max-width: 500px; margin-bottom: 20px; font-family: 'Fira Code', monospace; font-size: 1.2rem; font-weight: bold;
+        }
+        .score-text { color: #f8fafc; }
+        .xp-text { color: #38bdf8; }
+
+        #game-container { position: relative; width: 420px; height: 440px; background: black; border: 4px solid #1e40af; border-radius: 8px; box-shadow: 0 0 20px rgba(30, 64, 175, 0.4); }
+        canvas { display: block; }
+        
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
+        
+        #overlay h2 { color: #ef4444; font-size: 2.5rem; margin-bottom: 10px; }
+        #overlay p { color: #38bdf8; font-size: 1.2rem; margin-bottom: 25px; font-family: 'Fira Code'; }
+        
+        .btn { background: #eab308; color: #0f172a; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; margin-bottom: 10px; font-family: 'Inter', sans-serif;}
+        .btn:hover { background: #facc15; transform: scale(1.05); }
+        .btn-retour { background: #334155; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 1rem; font-weight: 600; margin-top: 15px;}
+        
+        .instructions { margin-top: 20px; color: #94a3b8; font-size: 0.9rem; text-align: center; }
+        .instructions kbd { background: #334155; padding: 3px 6px; border-radius: 4px; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>PAC-MAN</h1>
+    </div>
+
+    <div class="hud">
+        <div class="score-text">SCORE: <span id="ui-score">0</span></div>
+        <div class="xp-text">XP TOTAL: <span id="ui-xp">...</span></div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="420" height="440"></canvas>
+        <div id="overlay">
+            <h2 id="overlay-title">PRÊT ?</h2>
+            <p id="overlay-desc">Appuyez sur une flèche pour commencer</p>
+            <button class="btn" id="btn-action" onclick="startGame()">JOUER</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        Déplacez-vous avec <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd><br>
+        Mangez les grosses gommes pour rendre les fantômes vulnérables !<br>
+        (100 Points = +1 XP Cloud)
+    </div>
+    
+    <a href="index.html" class="btn-retour">← Retour à l'Académie</a>
+
+    <script>
+        // Configuration Firebase Cloud
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        const DB_URL = `${FIREBASE_URL}scores/parent/pacmanPro.json`;
+        let globalXP = 0;
+
+        // Variables du jeu
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const cellSize = 20;
+        let score = 0;
+        let gameLoop;
+        let isPlaying = false;
+        let powerMode = false;
+        let powerTimer = null;
+
+        // La carte du niveau (19x21)
+        // 0 = vide, 1 = mur, 2 = pac-gomme, 3 = super-gomme, 4 = porte fantôme
+        const mapTemplate = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,1],
+            [1,3,1,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,1,3,1],
+            [1,2,1,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,1,2,1],
+            [1,2,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,2,1],
+            [1,1,1,1,1,2,1,1,1,0,1,0,1,1,1,2,1,1,1,1,1],
+            [0,0,0,0,1,2,1,0,0,0,0,0,0,0,1,2,1,0,0,0,0],
+            [1,1,1,1,1,2,1,0,1,1,4,1,1,0,1,2,1,1,1,1,1],
+            [0,0,0,0,0,2,0,0,1,0,0,0,1,0,0,2,0,0,0,0,0],
+            [1,1,1,1,1,2,1,0,1,1,1,1,1,0,1,2,1,1,1,1,1],
+            [0,0,0,0,1,2,1,0,0,0,0,0,0,0,1,2,1,0,0,0,0],
+            [1,1,1,1,1,2,1,2,1,1,1,1,1,2,1,2,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,1],
+            [1,3,1,1,1,2,1,1,1,2,1,2,1,1,1,2,1,1,1,3,1],
+            [1,2,2,2,1,2,2,2,2,2,0,2,2,2,2,2,1,2,2,2,1],
+            [1,1,1,2,1,2,1,2,1,1,1,1,1,2,1,2,1,2,1,1,1],
+            [1,2,2,2,2,2,1,2,2,2,1,2,2,2,1,2,2,2,2,2,1],
+            [1,2,1,1,1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let map = [];
+        
+        // Entités
+        let pacman = { x: 10, y: 16, vx: 0, vy: 0, nextVx: 0, nextVy: 0, mouthOpen: 0, mouthDir: 1 };
+        let ghosts = [];
+        const ghostColors = ["#ef4444", "#38bdf8", "#f472b6", "#f97316"]; // Rouge, Cyan, Rose, Orange
+
+        // --- GESTION DU CLOUD (FIREBASE) ---
+        async function loadXP() {
+            try {
+                let res = await fetch(DB_URL);
+                let data = await res.json();
+                if(data && data.xp) globalXP = parseInt(data.xp);
+                document.getElementById('ui-xp').innerText = globalXP;
+            } catch(e) { console.log(e); }
+        }
+
+        async function addXP(amount) {
+            if (amount <= 0) return;
+            globalXP += amount;
+            document.getElementById('ui-xp').innerText = globalXP;
+            try {
+                await fetch(DB_URL, { method: 'PUT', body: JSON.stringify({ xp: globalXP }) });
+            } catch(e) { console.log(e); }
+        }
+
+        // --- LOGIQUE DU JEU ---
+        function initGame() {
+            map = mapTemplate.map(row => [...row]);
+            score = 0;
+            powerMode = false;
+            document.getElementById('ui-score').innerText = score;
+            
+            pacman = { x: 10, y: 16, vx: 0, vy: 0, nextVx: 0, nextVy: 0, mouthOpen: 0, mouthDir: 1 };
+            
+            ghosts = [
+                { x: 10, y: 8, vx: 1, vy: 0, color: ghostColors[0], startX: 10, startY: 8 },
+                { x: 9, y: 10, vx: -1, vy: 0, color: ghostColors[1], startX: 9, startY: 10 },
+                { x: 10, y: 10, vx: 0, vy: -1, color: ghostColors[2], startX: 10, startY: 10 },
+                { x: 11, y: 10, vx: 1, vy: 0, color: ghostColors[3], startX: 11, startY: 10 }
+            ];
+            
+            draw();
+        }
+
+        function startGame() {
+            document.getElementById('overlay').style.display = 'none';
+            if(!isPlaying) {
+                initGame();
+                isPlaying = true;
+                gameLoop = setInterval(update, 150); // Vitesse du jeu
+            }
+        }
+
+        function gameOver(won) {
+            isPlaying = false;
+            clearInterval(gameLoop);
+            
+            let xpEarned = Math.floor(score / 100);
+            addXP(xpEarned);
+
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlay-title');
+            const desc = document.getElementById('overlay-desc');
+            const btn = document.getElementById('btn-action');
+            
+            overlay.style.display = 'flex';
+            if (won) {
+                title.innerText = "GAGNÉ ! 🎉";
+                title.style.color = "#22c55e";
+            } else {
+                title.innerText = "GAME OVER 👻";
+                title.style.color = "#ef4444";
+            }
+            desc.innerText = `Score: ${score} | XP Gagné: +${xpEarned}`;
+            btn.innerText = "REJOUER";
+        }
+
+        // Contrôles
+        window.addEventListener("keydown", (e) => {
+            if(["ArrowUp", "w", "W"].includes(e.key)) { pacman.nextVx = 0; pacman.nextVy = -1; }
+            if(["ArrowDown", "s", "S"].includes(e.key)) { pacman.nextVx = 0; pacman.nextVy = 1; }
+            if(["ArrowLeft", "a", "A"].includes(e.key)) { pacman.nextVx = -1; pacman.nextVy = 0; }
+            if(["ArrowRight", "d", "D"].includes(e.key)) { pacman.nextVx = 1; pacman.nextVy = 0; }
+        });
+
+        function isWall(x, y) {
+            if(x < 0 || x >= 21 || y < 0 || y >= 22) return false; // Tunnel
+            return map[y][x] === 1 || map[y][x] === 4;
+        }
+
+        function update() {
+            // Mouvement Pacman
+            if (!isWall(pacman.x + pacman.nextVx, pacman.y + pacman.nextVy)) {
+                pacman.vx = pacman.nextVx;
+                pacman.vy = pacman.nextVy;
+            }
+            
+            if (!isWall(pacman.x + pacman.vx, pacman.y + pacman.vy)) {
+                pacman.x += pacman.vx;
+                pacman.y += pacman.vy;
+                
+                // Animation bouche
+                pacman.mouthOpen += 0.2 * pacman.mouthDir;
+                if(pacman.mouthOpen >= 0.5 || pacman.mouthOpen <= 0) pacman.mouthDir *= -1;
+
+                // Tunnels
+                if(pacman.x < 0) pacman.x = 20;
+                if(pacman.x > 20) pacman.x = 0;
+
+                // Manger
+                if (map[pacman.y][pacman.x] === 2) {
+                    map[pacman.y][pacman.x] = 0;
+                    score += 10;
+                    document.getElementById('ui-score').innerText = score;
+                } else if (map[pacman.y][pacman.x] === 3) {
+                    map[pacman.y][pacman.x] = 0;
+                    score += 50;
+                    document.getElementById('ui-score').innerText = score;
+                    activatePowerMode();
+                }
+            }
+
+            // Vérifier victoire (plus de gommes)
+            let remaining = 0;
+            for(let row of map) { for(let cell of row) { if(cell === 2 || cell === 3) remaining++; } }
+            if(remaining === 0) return gameOver(true);
+
+            // Mouvement Fantômes (IA basique)
+            ghosts.forEach(ghost => {
+                let possibleMoves = [
+                    {vx: 0, vy: -1}, {vx: 0, vy: 1}, {vx: -1, vy: 0}, {vx: 1, vy: 0}
+                ].filter(m => !isWall(ghost.x + m.vx, ghost.y + m.vy) && !(m.vx === -ghost.vx && m.vy === -ghost.vy));
+
+                if (possibleMoves.length > 0) {
+                    let move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    ghost.vx = move.vx; ghost.vy = move.vy;
+                } else {
+                    ghost.vx *= -1; ghost.vy *= -1; // Demi-tour si coincé
+                }
+
+                ghost.x += ghost.vx;
+                ghost.y += ghost.vy;
+                
+                if(ghost.x < 0) ghost.x = 20;
+                if(ghost.x > 20) ghost.x = 0;
+
+                // Collision
+                if (ghost.x === pacman.x && ghost.y === pacman.y) {
+                    if (powerMode) {
+                        score += 200;
+                        document.getElementById('ui-score').innerText = score;
+                        ghost.x = ghost.startX; ghost.y = ghost.startY;
+                    } else {
+                        gameOver(false);
+                    }
+                }
+            });
+
+            draw();
+        }
+
+        function activatePowerMode() {
+            powerMode = true;
+            if(powerTimer) clearTimeout(powerTimer);
+            powerTimer = setTimeout(() => { powerMode = false; }, 8000); // 8 secondes de pouvoir
+        }
+
+        function draw() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dessiner la carte
+            for (let r = 0; r < 22; r++) {
+                for (let c = 0; c < 21; c++) {
+                    if (map[r][c] === 1) {
+                        ctx.fillStyle = "#1e40af";
+                        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                        // Bordures intérieures style arcade
+                        ctx.strokeStyle = "#3b82f6";
+                        ctx.strokeRect(c * cellSize + 2, r * cellSize + 2, cellSize - 4, cellSize - 4);
+                    } else if (map[r][c] === 4) {
+                        ctx.fillStyle = "pink";
+                        ctx.fillRect(c * cellSize, r * cellSize + 8, cellSize, 4);
+                    } else if (map[r][c] === 2) {
+                        ctx.fillStyle = "#fef08a";
+                        ctx.beginPath();
+                        ctx.arc(c * cellSize + cellSize/2, r * cellSize + cellSize/2, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (map[r][c] === 3) {
+                        ctx.fillStyle = "#fef08a";
+                        ctx.beginPath();
+                        ctx.arc(c * cellSize + cellSize/2, r * cellSize + cellSize/2, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Dessiner Pacman
+            ctx.save();
+            ctx.translate(pacman.x * cellSize + cellSize/2, pacman.y * cellSize + cellSize/2);
+            if(pacman.vx === 1) ctx.rotate(0);
+            if(pacman.vx === -1) ctx.rotate(Math.PI);
+            if(pacman.vy === 1) ctx.rotate(Math.PI/2);
+            if(pacman.vy === -1) ctx.rotate(-Math.PI/2);
+
+            ctx.fillStyle = "#eab308";
+            ctx.beginPath();
+            ctx.arc(0, 0, cellSize/2 - 2, pacman.mouthOpen * Math.PI, (2 - pacman.mouthOpen) * Math.PI);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            ctx.restore();
+
+            // Dessiner Fantômes
+            ghosts.forEach(ghost => {
+                ctx.fillStyle = powerMode ? "#3b82f6" : ghost.color; // Fantômes bleus en mode power
+                let gx = ghost.x * cellSize;
+                let gy = ghost.y * cellSize;
+                
+                // Corps fantôme
+                ctx.beginPath();
+                ctx.arc(gx + cellSize/2, gy + cellSize/2, cellSize/2 - 2, Math.PI, 0);
+                ctx.lineTo(gx + cellSize - 2, gy + cellSize - 2);
+                
+                // Base dentelée
+                ctx.lineTo(gx + cellSize - 5, gy + cellSize - 5);
+                ctx.lineTo(gx + cellSize/2, gy + cellSize - 2);
+                ctx.lineTo(gx + 5, gy + cellSize - 5);
+                ctx.lineTo(gx + 2, gy + cellSize - 2);
+                
+                ctx.fill();
+
+                // Yeux
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(gx + 6, gy + 8, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 14, gy + 8, 3, 0, Math.PI * 2); ctx.fill();
+                
+                // Pupilles
+                ctx.fillStyle = powerMode ? "#fef08a" : "blue";
+                let px = powerMode ? 0 : ghost.vx * 1.5;
+                let py = powerMode ? 0 : ghost.vy * 1.5;
+                ctx.beginPath(); ctx.arc(gx + 6 + px, gy + 8 + py, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 14 + px, gy + 8 + py, 1.5, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        // Lancement Initial
+        loadXP();
+        initGame(); // Dessine la carte sans la lancer
+    </script>
+</body>
+</html>
