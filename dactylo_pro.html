@@ -2,160 +2,314 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Master Dactylographie</title>
+    <title>Master Dactylographie - EdClub Style</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700;800&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; 
-            color: #94a3b8; 
+            background: linear-gradient(180deg, #87CEEB 0%, #4facfe 100%);
+            color: #1e293b; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: center;
             min-height: 100vh; 
-            margin: 0; 
+            padding: 30px 20px; 
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             width: 100%;
-            background: #1e293b;
-            padding: 40px;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header h1 { color: #f8fafc; font-size: 1.8rem; margin: 0; }
-        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; }
-        .btn-retour:hover { background: #475569; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+        .header h1 { color: #0284c7; font-size: 1.5rem; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 10px;}
+        .btn-retour { background: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 700; transition: 0.2s; }
+        .btn-retour:hover { background: #cbd5e1; color: #1e293b; }
 
-        .stats-bar {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 30px;
-            font-family: 'Fira Code', monospace;
-            font-size: 1.5rem;
-            color: #38bdf8;
-        }
-
-        .typing-area {
-            font-family: 'Fira Code', monospace;
-            font-size: 1.8rem;
-            line-height: 1.6;
-            color: #64748b;
-            position: relative;
-            outline: none;
-            letter-spacing: 2px;
-        }
-
-        /* États des lettres */
-        .lettre { position: relative; }
-        .lettre.correcte { color: #4ade80; } /* Vert */
-        .lettre.fausse { color: #f87171; background: rgba(248, 113, 113, 0.2); border-radius: 3px; } /* Rouge */
+        /* VUE PARCOURS (NIVEAUX) */
+        #vue-parcours { display: flex; flex-direction: column; align-items: center; }
         
-        /* Curseur EdClub style */
-        .lettre.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -2px;
-            width: 100%;
-            height: 3px;
-            background-color: #38bdf8;
-            animation: blink 1s infinite;
+        .header-stats { display: flex; gap: 20px; margin-bottom: 30px; }
+        .stat-badge { background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 20px; font-weight: 800; color: #0369a1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px;}
+        
+        .grid-lecons { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; width: 100%; }
+        
+        .carte-lecon { 
+            background: white; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;
+            position: relative; overflow: hidden; border-bottom: 4px solid #cbd5e1;
+        }
+        .carte-lecon:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        .carte-lecon.verrouille { background: #f1f5f9; cursor: not-allowed; opacity: 0.7; border-bottom-color: #e2e8f0; }
+        .carte-lecon.verrouille:hover { transform: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        .lecon-num { font-size: 2rem; font-weight: 800; color: #334155; margin-bottom: 5px; }
+        .lecon-titre { font-size: 0.9rem; color: #64748b; font-weight: 600; margin-bottom: 15px; height: 35px; display: flex; align-items: center; justify-content: center; }
+        
+        .stars { color: #cbd5e1; font-size: 1.2rem; }
+        .stars span { margin: 0 2px; }
+        .star-gold { color: #fbbf24; }
+
+        .lock-icon { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; opacity: 0.5;}
+
+        /* VUE EXERCICE */
+        #vue-exercice { display: none; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; max-width: 800px; margin: 0 auto;}
+        
+        .top-bar-exo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;}
+        .top-bar-exo h2 { color: #0f172a; margin: 0; font-size: 1.4rem; }
+        
+        .live-stats { display: flex; gap: 20px; font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.2rem; color: #0284c7; }
+        
+        .typing-area { 
+            font-family: 'Fira Code', monospace; font-size: 2rem; line-height: 1.6; color: #94a3b8; 
+            position: relative; outline: none; letter-spacing: 3px; min-height: 150px;
+            background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;
         }
 
+        .lettre { position: relative; }
+        .lettre.correcte { color: #22c55e; } 
+        .lettre.fausse { color: #ef4444; background: rgba(239, 68, 68, 0.2); border-radius: 3px; }
+        .lettre.active::before {
+            content: ''; position: absolute; left: 0; bottom: -4px; width: 100%; height: 4px; 
+            background-color: #0ea5e9; animation: blink 1s infinite;
+        }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        .controles { margin-top: 30px; display: flex; gap: 15px; }
-        select, button {
-            background: #0f172a; color: #e2e8f0; border: 1px solid #334155;
-            padding: 10px 20px; border-radius: 6px; font-size: 1rem; cursor: pointer;
-        }
-        button:hover { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
-
-        /* Input caché pour capter la frappe sur mobile/tablette si besoin */
         #hidden-input { position: absolute; opacity: 0; pointer-events: none; }
         
-        #resultat-cloud { margin-top: 15px; color: #4ade80; font-weight: bold; font-size: 0.9rem; }
+        .controles-exo { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+        .btn-action { background: #0284c7; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #0369a1;}
+        .btn-action:hover { background: #0369a1; transform: translateY(2px); box-shadow: 0 2px 0 #075985;}
+        .btn-action.secondary { background: #94a3b8; box-shadow: 0 4px 0 #64748b; }
+        .btn-action.secondary:hover { background: #64748b; transform: translateY(2px); box-shadow: 0 2px 0 #475569;}
+
+        /* MODAL DE FIN */
+        #modal-fin { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .modal-stars { font-size: 3.5rem; color: #e2e8f0; margin: 15px 0; letter-spacing: 5px;}
+        .modal-stats { display: flex; justify-content: center; gap: 30px; margin: 25px 0; font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: bold; color: #0f172a;}
+        .stat-box { background: #f1f5f9; padding: 15px; border-radius: 12px; width: 120px; }
+        .stat-label { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #64748b; text-transform: uppercase; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header">
-            <h1>Master Dactylographie</h1>
-            <a href="index.html" class="btn-retour">← Tableau de Bord</a>
+            <h1>⌨️ Master Dactylographie</h1>
+            <a href="index.html" class="btn-retour">← Quitter</a>
         </div>
 
-        <div class="stats-bar">
-            <div id="affichage-wpm">0 MPM</div>
-            <div id="affichage-acc">100% Précision</div>
-            <div id="affichage-temps">0s</div>
-        </div>
-
-        <div class="typing-area" id="zone-texte" tabindex="0">
+        <div id="vue-parcours">
+            <div class="header-stats">
+                <div class="stat-badge">⭐ <span id="total-stars">0</span> Étoiles</div>
+                <div class="stat-badge">🚀 Record : <span id="record-wpm">0</span> MPM</div>
             </div>
-        <input type="text" id="hidden-input">
-
-        <div class="controles">
-            <select id="choix-niveau">
-                <option value="0">Niveau 1 : Touches de base (fj dk sl a;)</option>
-                <option value="1">Niveau 2 : Mots fréquents courts</option>
-                <option value="2">Niveau 3 : Phrases complexes (Ponctuation)</option>
-            </select>
-            <button onclick="lancerExercice()">🔄 Relancer</button>
+            
+            <div class="grid-lecons" id="grille-niveaux">
+                </div>
         </div>
-        
-        <div id="resultat-cloud"></div>
+
+        <div id="vue-exercice">
+            <div class="top-bar-exo">
+                <h2 id="titre-exo-en-cours">Leçon 1</h2>
+                <div class="live-stats">
+                    <div id="live-wpm">0 MPM</div>
+                    <div id="live-acc">100%</div>
+                </div>
+            </div>
+
+            <div class="typing-area" id="zone-texte" tabindex="0"></div>
+            <input type="text" id="hidden-input">
+
+            <div class="controles-exo">
+                <button class="btn-action secondary" onclick="retourParcours()">Abandonner</button>
+                <button class="btn-action" onclick="lancerExerciceActuel()">🔄 Recommencer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-fin">
+        <div class="modal-content">
+            <h2 id="modal-title" style="font-size: 2rem; color: #0284c7; margin-bottom: 10px;">Leçon Terminée !</h2>
+            <div class="modal-stars" id="modal-stars">★★★</div>
+            
+            <div class="modal-stats">
+                <div class="stat-box">
+                    <div id="modal-wpm">0</div>
+                    <div class="stat-label">MPM</div>
+                </div>
+                <div class="stat-box">
+                    <div id="modal-acc">0%</div>
+                    <div class="stat-label">Précision</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                <button class="btn-action secondary" onclick="retourParcours()">Menu</button>
+                <button class="btn-action" id="btn-next-lesson" onclick="lancerProchaineLecon()">Suivant ➔</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
-        
-        const exercices = [
-            "ff jj fj jf dd kk dk kd ss ll sl ls aa ;; a; ;a fdsa jkl;", // Base
-            "le la les un une des dans pour par sur avec sans sous", // Mots courts
-            "La dactylographie est l'action de saisir un texte sur un clavier. Pour être efficace, il faut utiliser ses dix doigts sans regarder les touches." // Phrases
+        const DB_URL = `${FIREBASE_URL}scores/parent/dactyloPro.json`;
+
+        // --- BASE DE DONNÉES DU PARCOURS (20 Niveaux progressifs) ---
+        const PARCOURS = [
+            { id: 1, titre: "Touches F et J", texte: "ff jj fj jf ff jj fj jf" },
+            { id: 2, titre: "Touches D et K", texte: "dd kk dk kd df jk fd kj" },
+            { id: 3, titre: "Touches S et L", texte: "ss ll sl ls sf jl ds kl" },
+            { id: 4, titre: "Touches A et ;", texte: "aa ;; a; ;a as ;l af ;j" },
+            { id: 5, titre: "Ligne de base (Mots)", texte: "as la sa fa da kal las fas" },
+            { id: 6, titre: "Ligne de base (Long)", texte: "fala jala salsa dallas fada" },
+            { id: 7, titre: "Touches E et I", texte: "ee ii ei ie de ki se li" },
+            { id: 8, titre: "Mots avec E et I", texte: "le la les des file pile sile" },
+            { id: 9, titre: "Touches R et U", texte: "rr uu ru ur fr ju dr ku" },
+            { id: 10, titre: "Mots avec R et U", texte: "rue dur sur fur rue dur sur" },
+            { id: 11, titre: "Touches T et Y", texte: "tt yy ty yt ft jy dt ky" },
+            { id: 12, titre: "Mots avec T et Y", texte: "ty type style tye type style" },
+            { id: 13, titre: "Touches C et ,", texte: "cc ,, c, ,c dc k, sc l," },
+            { id: 14, titre: "Touches V et M", texte: "vv mm vm mv fv jm dv km" },
+            { id: 15, titre: "Mots fréquents 1", texte: "le un la de du et en il" },
+            { id: 16, titre: "Mots fréquents 2", texte: "pour dans sur avec sans par" },
+            { id: 17, titre: "Les Majuscules (Shift)", texte: "La Le Les Des Sur Dans" },
+            { id: 18, titre: "Ponctuation de base", texte: "Il est la. Elle va bien." },
+            { id: 19, titre: "Phrases simples", texte: "Le chat dort sur le lit." },
+            { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
+        // --- VARIABLES GLOBALES ---
+        let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} }; // Structure de sauvegarde
+        let leconActuelleId = null;
+        
         let texteActuel = "";
         let indexFrappe = 0;
         let fautes = 0;
         let tempsDebut = null;
         let timer = null;
         let partieFinie = false;
-        let recordActuel = 0;
 
-        // Récupérer le record cloud au chargement
-        async function chargerRecord() {
+        // --- SAUVEGARDE & CLOUD ---
+        async function chargerProgression() {
             try {
-                let res = await fetch(`${FIREBASE_URL}scores/parent/dactyloPro.json`);
+                let res = await fetch(DB_URL);
                 let data = await res.json();
-                if(data && data.wpm) recordActuel = data.wpm;
-            } catch(e) {}
+                if (data) {
+                    progressionData.recordWPM = data.wpm || 0;
+                    progressionData.etoilesGlobales = data.etoilesGlobales || 0;
+                    progressionData.niveauxStats = data.niveauxStats || {};
+                }
+            } catch(e) { console.error("Erreur Cloud:", e); }
+            majAffichageParcours();
         }
-        chargerRecord();
 
-        function lancerExercice() {
-            let niv = document.getElementById('choix-niveau').value;
-            texteActuel = exercices[niv];
+        async function sauvegarderProgression(nouveauWPM, nbEtoiles, idLecon) {
+            // Maj Record MPM Global
+            if (nouveauWPM > progressionData.recordWPM) {
+                progressionData.recordWPM = nouveauWPM;
+            }
+
+            // Maj des étoiles de la leçon (on ne garde que le meilleur score d'étoiles pour un niveau)
+            let etoilesActuellesNiveau = progressionData.niveauxStats[idLecon] || 0;
+            if (nbEtoiles > etoilesActuellesNiveau) {
+                progressionData.etoilesGlobales += (nbEtoiles - etoilesActuellesNiveau);
+                progressionData.niveauxStats[idLecon] = nbEtoiles;
+            }
+
+            majAffichageParcours();
+
+            // Envoi Firebase (On garde la structure qui remonte vers stats_pro : wpm est requis au premier niveau)
+            try {
+                await fetch(DB_URL, { 
+                    method: 'PUT', 
+                    body: JSON.stringify({ 
+                        wpm: progressionData.recordWPM, 
+                        etoilesGlobales: progressionData.etoilesGlobales,
+                        niveauxStats: progressionData.niveauxStats
+                    }) 
+                });
+            } catch(e) { console.error("Erreur sauvegarde Cloud:", e); }
+        }
+
+        // --- INTERFACE PARCOURS ---
+        function majAffichageParcours() {
+            document.getElementById('total-stars').textContent = progressionData.etoilesGlobales;
+            document.getElementById('record-wpm').textContent = progressionData.recordWPM;
+
+            const grille = document.getElementById('grille-niveaux');
+            grille.innerHTML = '';
+
+            let niveauPrecedentReussi = true; // Le niv 1 est tjrs débloqué
+
+            PARCOURS.forEach((lecon, index) => {
+                let nbEtoiles = progressionData.niveauxStats[lecon.id] || 0;
+                let estDebloque = niveauPrecedentReussi;
+                
+                // Si on a moins d'1 étoile, le niveau suivant sera verrouillé
+                if (nbEtoiles < 1) niveauPrecedentReussi = false;
+
+                let card = document.createElement('div');
+                card.className = `carte-lecon ${estDebloque ? '' : 'verrouille'}`;
+                
+                let starsHtml = "";
+                for(let i=1; i<=3; i++) {
+                    starsHtml += `<span class="${i <= nbEtoiles ? 'star-gold' : ''}">★</span>`;
+                }
+
+                card.innerHTML = `
+                    ${estDebloque ? '' : '<div class="lock-icon">🔒</div>'}
+                    <div class="lecon-num">${lecon.id}</div>
+                    <div class="lecon-titre">${lecon.titre}</div>
+                    <div class="stars">${starsHtml}</div>
+                `;
+
+                if (estDebloque) {
+                    card.onclick = () => preparerLecon(lecon.id);
+                }
+
+                grille.appendChild(card);
+            });
+        }
+
+        function retourParcours() {
+            document.getElementById('vue-exercice').style.display = 'none';
+            document.getElementById('modal-fin').style.display = 'none';
+            document.getElementById('vue-parcours').style.display = 'flex';
+            clearInterval(timer);
+        }
+
+        // --- MOTEUR DE FRAPPE ---
+        function preparerLecon(id) {
+            leconActuelleId = id;
+            lancerExerciceActuel();
+        }
+
+        function lancerExerciceActuel() {
+            let leconObj = PARCOURS.find(l => l.id === leconActuelleId);
+            texteActuel = leconObj.texte;
+            
+            document.getElementById('vue-parcours').style.display = 'none';
+            document.getElementById('modal-fin').style.display = 'none';
+            document.getElementById('vue-exercice').style.display = 'block';
+            
+            document.getElementById('titre-exo-en-cours').textContent = `Leçon ${leconObj.id} : ${leconObj.titre}`;
+            
             indexFrappe = 0; fautes = 0; tempsDebut = null; partieFinie = false;
             clearInterval(timer);
             
-            document.getElementById('affichage-wpm').textContent = "0 MPM";
-            document.getElementById('affichage-acc').textContent = "100% Précision";
-            document.getElementById('affichage-temps').textContent = "0s";
-            document.getElementById('resultat-cloud').textContent = "";
+            document.getElementById('live-wpm').textContent = "0 MPM";
+            document.getElementById('live-acc').textContent = "100%";
 
             const zone = document.getElementById('zone-texte');
             zone.innerHTML = "";
             
-            // Transformer le texte en spans
             for(let i=0; i<texteActuel.length; i++) {
                 let span = document.createElement('span');
                 span.textContent = texteActuel[i];
@@ -172,18 +326,24 @@
         function demarrerTimer() {
             if(!tempsDebut) {
                 tempsDebut = new Date();
-                timer = setInterval(() => {
-                    let s = Math.floor((new Date() - tempsDebut)/1000);
-                    document.getElementById('affichage-temps').textContent = s + "s";
-                }, 1000);
+                timer = setInterval(majStatsLive, 500);
             }
         }
 
-        // Écoute de la frappe
+        function majStatsLive() {
+            if (indexFrappe === 0 || partieFinie) return;
+            let precision = Math.max(0, Math.floor(((indexFrappe - fautes) / indexFrappe) * 100)) || 100;
+            let tempsMinutes = (new Date() - tempsDebut) / 60000;
+            let motsParMinute = tempsMinutes > 0 ? Math.floor((indexFrappe / 5) / tempsMinutes) : 0;
+
+            document.getElementById('live-acc').textContent = precision + "%";
+            document.getElementById('live-wpm').textContent = motsParMinute + " MPM";
+            return { wpm: motsParMinute, acc: precision };
+        }
+
         document.addEventListener('keydown', (e) => {
-            if(partieFinie) return;
+            if(partieFinie || document.getElementById('vue-exercice').style.display === 'none') return;
             
-            // Ignorer les touches de contrôle (Shift, Alt, etc.)
             if(e.key.length !== 1 && e.key !== 'Backspace') return;
             
             demarrerTimer();
@@ -199,7 +359,6 @@
                 return;
             }
 
-            // Vérification de la touche frappée
             let caractereAttendu = texteActuel[indexFrappe];
             
             if(e.key === caractereAttendu) {
@@ -212,49 +371,61 @@
             spans[indexFrappe].classList.remove('active');
             indexFrappe++;
 
-            // Calculs Temps Réel
-            let totalTapes = indexFrappe;
-            let precision = Math.max(0, Math.floor(((totalTapes - fautes) / totalTapes) * 100)) || 100;
-            
-            let tempsMinutes = (new Date() - tempsDebut) / 60000;
-            // MPM = (Caractères / 5) / Minutes
-            let motsParMinute = tempsMinutes > 0 ? Math.floor((totalTapes / 5) / tempsMinutes) : 0;
-
-            document.getElementById('affichage-acc').textContent = precision + "% Précision";
-            document.getElementById('affichage-wpm').textContent = motsParMinute + " MPM";
+            majStatsLive();
 
             if(indexFrappe >= texteActuel.length) {
-                terminerPartie(motsParMinute, precision);
+                terminerPartie();
             } else {
                 spans[indexFrappe].classList.add('active');
             }
         });
 
-        async function terminerPartie(wpm, acc) {
+        function terminerPartie() {
             partieFinie = true;
             clearInterval(timer);
             
-            if(wpm > recordActuel) {
-                document.getElementById('resultat-cloud').textContent = `🚀 Nouveau Record Cloud : ${wpm} MPM ! Sauvegarde en cours...`;
-                
-                // Envoi Firebase
-                try {
-                    await fetch(`${FIREBASE_URL}scores/parent/dactyloPro.json`, {
-                        method: 'PUT',
-                        body: JSON.stringify({ wpm: wpm, acc: acc })
-                    });
-                    document.getElementById('resultat-cloud').textContent = `✅ Enregistré dans le Cloud !`;
-                    recordActuel = wpm;
-                } catch(err) {
-                    console.error("Erreur sauvegarde", err);
-                }
+            let statsFinales = majStatsLive();
+            let precision = statsFinales.acc;
+            let mpm = statsFinales.wpm;
+
+            // Calcul des étoiles
+            let etoiles = 0;
+            if (precision >= 95) etoiles = 3;
+            else if (precision >= 85) etoiles = 2;
+            else if (precision >= 70) etoiles = 1;
+
+            // Affichage Modal
+            let starsHtml = "";
+            for(let i=1; i<=3; i++) { starsHtml += `<span style="color: ${i <= etoiles ? '#fbbf24' : '#cbd5e1'}">★</span>`; }
+            
+            document.getElementById('modal-title').textContent = etoiles > 0 ? "Leçon Réussie !" : "Presque... Réessayez !";
+            document.getElementById('modal-title').style.color = etoiles > 0 ? "#0284c7" : "#ef4444";
+            document.getElementById('modal-stars').innerHTML = starsHtml;
+            document.getElementById('modal-wpm').textContent = mpm;
+            document.getElementById('modal-acc').textContent = precision + "%";
+            
+            // Masquer le bouton "Suivant" si on n'a pas au moins 1 étoile ou si c'est la dernière leçon
+            let btnNext = document.getElementById('btn-next-lesson');
+            if (etoiles >= 1 && leconActuelleId < PARCOURS.length) {
+                btnNext.style.display = "inline-block";
             } else {
-                document.getElementById('resultat-cloud').textContent = `Fin ! Votre record actuel est de ${recordActuel} MPM.`;
+                btnNext.style.display = "none";
+            }
+
+            document.getElementById('modal-fin').style.display = "flex";
+
+            // Sauvegarde globale (uniquement si le niveau est réussi, ou pour maj le MPM)
+            sauvegarderProgression(mpm, etoiles, leconActuelleId);
+        }
+
+        function lancerProchaineLecon() {
+            if (leconActuelleId < PARCOURS.length) {
+                preparerLecon(leconActuelleId + 1);
             }
         }
 
-        // Lancement initial
-        window.onload = lancerExercice;
+        // Lancement
+        chargerProgression();
     </script>
 </body>
 </html>
