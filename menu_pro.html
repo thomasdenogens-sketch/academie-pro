@@ -3,61 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistant Repas - La Famille</title>
+    <title>Assistant Menus & Courses</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3436; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
         
-        #app-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 900px; width: 100%; text-align: center; }
-        h1 { color: #d35400; font-weight: 900; font-size: 2.5rem; margin-bottom: 5px; }
-        .sous-titre { color: #7f8c8d; font-size: 1.1rem; margin-bottom: 25px; font-weight: bold; }
+        body { 
+            font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; 
+        }
         
-        .btn-action { background: #27ae60; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 5px #2196f3; transition: 0.2s; margin-bottom: 25px; }
-        .btn-action:active { transform: translateY(4px); box-shadow: none; }
-        .btn-action:hover { background: #2ecc71; }
+        .container { max-width: 800px; width: 100%; background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         
-        .grille-semaine { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
-        
-        .carte-jour { background: #f8f9fa; border: 3px solid #dfe6e9; border-radius: 15px; padding: 15px; text-align: left; transition: 0.2s; cursor: pointer; }
-        .carte-jour:hover { border-color: #f39c12; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(243, 156, 18, 0.2); }
-        .jour-titre { font-size: 1.2rem; font-weight: 900; color: #f39c12; margin-bottom: 10px; border-bottom: 2px solid #ffeaa7; padding-bottom: 5px; text-transform: uppercase; }
-        .plat-titre { font-size: 1.1rem; font-weight: bold; color: #2d3436; margin-bottom: 5px; }
-        .plat-temps { font-size: 0.9rem; color: #e74c3c; font-weight: bold; }
-        
-        /* Fenêtre Modale pour la recette */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; padding: 20px;}
-        .modal-content { background: white; padding: 30px; border-radius: 20px; max-width: 600px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto; text-align: left;}
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: #bdc3c7; line-height: 1; }
-        .close-btn:hover { color: #e74c3c; }
-        
-        .recette-titre { font-size: 2rem; color: #d35400; margin-bottom: 5px; font-weight: 900; }
-        .recette-badge { display: inline-block; background: #ffeaa7; color: #d35400; padding: 5px 10px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; }
-        
-        .section-titre { font-size: 1.3rem; color: #2980b9; margin: 15px 0 10px 0; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-        .liste-ing { list-style-type: none; }
-        .liste-ing li { margin-bottom: 5px; padding-left: 25px; position: relative; font-size: 1.1rem;}
-        .liste-ing li::before { content: '🛒'; position: absolute; left: 0; top: 0; font-size: 1rem; }
-        
-        .liste-etapes { margin-left: 20px; font-size: 1.1rem; line-height: 1.5; }
-        .liste-etapes li { margin-bottom: 10px; padding-left: 10px; }
-        .liste-etapes li::marker { font-weight: bold; color: #e74c3c; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 20px;}
+        .header h1 { color: #10b981; font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;}
+        .btn-retour { background: #334155; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .btn-retour:hover { background: #475569; }
 
-        .btn-retour { background: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem; text-decoration: none; display: inline-block;}
+        /* Onglets */
+        .tabs { display: flex; background: #0f172a; border-radius: 8px; overflow: hidden; margin-bottom: 25px; border: 1px solid #334155; }
+        .tab-btn { flex: 1; padding: 15px; background: transparent; border: none; color: #94a3b8; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .tab-btn.actif { background: #10b981; color: #0f172a; }
+        .tab-content { display: none; }
+        .tab-content.actif { display: block; }
+
+        /* Onglet Garde-Manger */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 12px 15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1rem; outline: none; }
+        input[type="text"]:focus { border-color: #10b981; }
+        .btn-add { background: #10b981; color: #0f172a; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+
+        .ingredient-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .ingredient-tag { background: #0f172a; border: 1px solid #334155; padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .del-btn { color: #f43f5e; cursor: pointer; font-weight: bold; }
+
+        /* Onglet Menu */
+        .menu-jour { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; position: relative;}
+        .jour-titre { color: #10b981; font-weight: 800; font-size: 1.1rem; text-transform: uppercase; }
+        .jour-repas { font-size: 1.05rem; color: #f8fafc; }
+        .badge-decouverte { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin-left: 10px; }
+        
+        .btn-generate { background: #10b981; color: #0f172a; border: none; padding: 15px; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; width: 100%; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); transition: 0.2s;}
+        .btn-generate:hover { background: #059669; transform: translateY(-2px); }
+        
+        .btn-recette { background: #38bdf8; color: #0f172a; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: 0.2s; align-self: flex-start; margin-top: 5px;}
+        .btn-recette:hover { background: #0284c7; }
+
+        /* Onglet Courses */
+        #liste-courses-area { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 20px; font-family: monospace; font-size: 1.1rem; color: #e2e8f0; white-space: pre-wrap; line-height: 1.6; min-height: 200px; margin-bottom: 20px;}
+        .btn-copy { background: #38bdf8; color: #0f172a; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; transition: 0.2s;}
+        .btn-copy:hover { background: #0284c7; }
+
+        /* Modal Recette (Adapté au thème sombre) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; padding: 20px;}
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 16px; max-width: 600px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto; text-align: left; border: 1px solid #334155; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: #94a3b8; line-height: 1; }
+        .close-btn:hover { color: #f43f5e; }
+        
+        .recette-titre { font-size: 1.5rem; color: #10b981; margin-bottom: 5px; font-weight: 800; }
+        .recette-badge { display: inline-block; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 5px 10px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; }
+        
+        .section-titre { font-size: 1.2rem; color: #38bdf8; margin: 15px 0 10px 0; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .liste-ing, .liste-etapes { margin-left: 20px; font-size: 1.05rem; line-height: 1.6; color: #e2e8f0; }
+        .liste-ing li { margin-bottom: 5px; list-style-type: none; position: relative; }
+        .liste-ing li::before { content: '🛒'; position: absolute; left: -25px; top: 0; font-size: 1rem; }
+        .liste-etapes li { margin-bottom: 10px; }
+        .liste-etapes b { color: #10b981; }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <h1>👨‍🍳 Assistant Repas</h1>
-        <p class="sous-titre">Des plats simples, rapides, et sans prise de tête !</p>
-        
-        <button class="btn-action" onclick="genererMenu()">🎲 Générer le menu de la semaine</button>
-        
-        <div class="grille-semaine" id="menu-grille">
-            </div>
+    <div class="container">
+        <div class="header">
+            <h1>🥗 Assistant Repas & Courses</h1>
+            <a href="index.html" class="btn-retour">← Retour</a>
+        </div>
 
-        <a href="index.html" class="btn-retour">🏠 Retour à l'Académie</a>
+        <div class="tabs">
+            <button class="tab-btn actif" onclick="changerOnglet('pantry')" id="btn-pantry">1. Garde-Manger</button>
+            <button class="tab-btn" onclick="changerOnglet('menu')" id="btn-menu">2. Menu de la Semaine</button>
+            <button class="tab-btn" onclick="changerOnglet('shopping')" id="btn-shopping">3. Liste Google Keep</button>
+        </div>
+
+        <div id="tab-pantry" class="tab-content actif">
+            <p style="color: #94a3b8; margin-bottom: 20px; font-size: 0.95rem;">Listez ici les ingrédients que vous aimez acheter régulièrement. Tapez le nom et appuyez sur Entrée.</p>
+            <form class="input-group" onsubmit="ajouterIngredient(event)">
+                <input type="text" id="input-ing" placeholder="Ex: Poulet, Courgettes, Riz basmati..." autocomplete="off">
+                <button type="submit" class="btn-add">Ajouter</button>
+            </form>
+            <div class="ingredient-list" id="liste-ingredients">
+                </div>
+        </div>
+
+        <div id="tab-menu" class="tab-content">
+            <button class="btn-generate" onclick="genererMenu()">🪄 Générer les repas du soir (Lundi - Vendredi)</button>
+            <div id="zone-menu">
+                <p style="text-align: center; color: #64748b; margin-top: 20px;">Cliquez sur le bouton ci-dessus pour planifier la semaine.</p>
+            </div>
+        </div>
+
+        <div id="tab-shopping" class="tab-content">
+            <p style="color: #94a3b8; margin-bottom: 15px; font-size: 0.95rem;">Voici la liste exacte des courses nécessaires pour le menu généré. Copiez-la pour la coller dans Google Keep ou Super U.</p>
+            <div id="liste-courses-area">Le menu n'a pas encore été généré.</div>
+            <button class="btn-copy" onclick="copierPressePapier()">📋 Copier la liste de courses</button>
+            <div id="msg-copy" style="color: #10b981; font-weight: bold; text-align: center; margin-top: 10px; display: none;">Copié dans le presse-papier !</div>
+        </div>
     </div>
 
     <div id="modal-recette" class="modal" onclick="fermerModal(event)">
@@ -69,157 +120,164 @@
     </div>
 
     <script>
-        // BASE DE DONNÉES DES RECETTES ULTRA-SIMPLES
-        const baseRecettes = [
-            {
-                nom: "Croque-Monsieur Express", temps: "Prépa: 5 min | Cuisson: 10 min",
-                ingredients: ["Pain de mie", "Jambon blanc", "Fromage râpé ou tranches", "Un peu de beurre ou crème fraîche"],
-                etapes: [
-                    "Tartiner légèrement l'extérieur des tranches de pain de mie.",
-                    "Garnir l'intérieur avec le jambon et le fromage.",
-                    "Parsemer un peu de fromage râpé sur le dessus.",
-                    "Passer au four ou à la machine à croque-monsieur jusqu'à ce que le fromage fonde."
-                ]
-            },
-            {
-                nom: "Wraps Poulet-Crudités", temps: "Prépa: 10 min | Cuisson: 0 min",
-                ingredients: ["Galettes de blé (Wraps)", "Émincés de poulet rôti (déjà cuit)", "Salade verte", "Tomates cerises", "Sauce au choix (mayo, yaourt...)"],
-                etapes: [
-                    "Étaler un peu de sauce au centre de chaque galette.",
-                    "Déposer une poignée de salade et des tomates coupées en deux.",
-                    "Ajouter les émincés de poulet.",
-                    "Rouler le wrap en serrant bien et couper en deux."
-                ]
-            },
-            {
-                nom: "Pâtes Carbonara Simplifiées", temps: "Prépa: 5 min | Cuisson: 12 min",
-                ingredients: ["Pâtes", "Lardons allumettes", "Crème fraîche épaisse", "Fromage râpé (ou parmesan)"],
-                etapes: [
-                    "Faire cuire les pâtes dans l'eau bouillante salée.",
-                    "Pendant ce temps, faire dorer les lardons à la poêle (sans matière grasse).",
-                    "Égoutter les pâtes, les remettre dans la casserole.",
-                    "Mélanger avec les lardons, deux grosses cuillères de crème et le fromage."
-                ]
-            },
-            {
-                nom: "Omelette au Fromage", temps: "Prépa: 5 min | Cuisson: 5 min",
-                ingredients: ["Œufs (2 par personne)", "Gruyère râpé", "Beurre", "Salade verte en sachet (pour accompagner)"],
-                etapes: [
-                    "Casser les œufs dans un bol, ajouter sel et poivre, et battre avec une fourchette.",
-                    "Faire fondre un peu de beurre dans une poêle chaude.",
-                    "Verser les œufs. Quand les bords cuisent, ramener vers le centre.",
-                    "Ajouter le fromage, plier l'omelette en deux et servir avec la salade."
-                ]
-            },
-            {
-                nom: "Salade de Pâtes Estivale", temps: "Prépa: 15 min | Cuisson: 10 min",
-                ingredients: ["Pâtes courtes (Pennes ou Fusillis)", "Tomates", "Dés de jambon ou thon", "Maïs en boîte", "Vinaigrette"],
-                etapes: [
-                    "Faire cuire les pâtes puis les passer sous l'eau froide pour les refroidir.",
-                    "Couper les tomates en petits morceaux.",
-                    "Dans un grand saladier, mélanger les pâtes, tomates, jambon (ou thon) et maïs.",
-                    "Ajouter la vinaigrette, bien mélanger et c'est prêt !"
-                ]
-            },
-            {
-                nom: "Gnocchis à Poêler", temps: "Prépa: 2 min | Cuisson: 5 min",
-                ingredients: ["Gnocchis à poêler (au rayon frais)", "Beurre ou huile d'olive", "Parmesan", "Jambon sec (optionnel)"],
-                etapes: [
-                    "Faire fondre le beurre dans une poêle.",
-                    "Ajouter les gnocchis et les faire dorer 5 minutes en remuant souvent.",
-                    "Servir immédiatement en saupoudrant de parmesan et en ajoutant le jambon en chiffonnade."
-                ]
-            },
-            {
-                nom: "Hot-Dogs Maison", temps: "Prépa: 5 min | Cuisson: 5 min",
-                ingredients: ["Pains à hot-dog", "Saucisses de Strasbourg (Knacki)", "Ketchup ou Moutarde", "Oignons frits (en pot, optionnel)"],
-                etapes: [
-                    "Faire bouillir de l'eau et y plonger les saucisses pendant 3 minutes.",
-                    "Ouvrir les pains et les passer 30 secondes au micro-ondes ou au grille-pain.",
-                    "Mettre un peu de sauce dans le pain, insérer la saucisse.",
-                    "Parsemer d'oignons frits."
-                ]
-            },
-            {
-                nom: "Riz Sauté Express", temps: "Prépa: 5 min | Cuisson: 8 min",
-                ingredients: ["Sachets de riz micro-ondable", "Dés de jambon", "Petits pois (en boîte)", "Œufs (2)"],
-                etapes: [
-                    "Chauffer le riz au micro-ondes comme indiqué sur le sachet.",
-                    "Dans une grande poêle, faire brouiller les œufs.",
-                    "Ajouter les dés de jambon, les petits pois égouttés et le riz chaud.",
-                    "Mélanger le tout avec un filet de sauce soja (si vous aimez)."
-                ]
-            },
-            {
-                nom: "Quiche Sans Pâte", temps: "Prépa: 10 min | Cuisson: 35 min (four)",
-                ingredients: ["3 œufs", "50 cl de lait", "100g de farine", "100g de gruyère râpé", "200g de lardons"],
-                etapes: [
-                    "Préchauffer le four à 200°C.",
-                    "Dans un saladier, fouetter les œufs avec la farine, puis ajouter le lait progressivement.",
-                    "Ajouter les lardons et le gruyère.",
-                    "Verser dans un plat beurré et enfourner 35 minutes."
-                ]
-            },
-            {
-                nom: "Tartines Tomate-Mozza", temps: "Prépa: 5 min | Cuisson: 10 min (four)",
-                ingredients: ["Grandes tranches de pain de campagne", "Tomates", "Boule de mozzarella", "Huile d'olive"],
-                etapes: [
-                    "Disposer les tranches de pain sur une plaque de four.",
-                    "Couper les tomates et la mozzarella en rondelles.",
-                    "Alterner une tranche de tomate et une tranche de mozza sur le pain.",
-                    "Ajouter un filet d'huile d'olive, du sel, et enfourner à 200°C pendant 10 min."
-                ]
-            }
+        const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
+        
+        let ingredientsBase = [];
+        let menuActuel = [];
+        
+        // Liste d'ingrédients sains "Découverte" (Nutri-score A)
+        const decouvertesSante = [
+            "Quinoa Bio", "Lentilles Corail", "Patate Douce", "Boulgour", 
+            "Tofu Fumé", "Pois Chiches", "Épinards Frais", "Sarrasin", "Chou Kale"
         ];
 
-        const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-        // Génère un nouveau menu aléatoire
-        function genererMenu() {
-            const grille = document.getElementById("menu-grille");
-            grille.innerHTML = "";
+        // Onglets
+        function changerOnglet(id) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('actif'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('actif'));
+            document.getElementById(`btn-${id}`).classList.add('actif');
+            document.getElementById(`tab-${id}`).classList.add('actif');
             
-            // On mélange la base de recettes
-            let recettesMelangees = [...baseRecettes].sort(() => Math.random() - 0.5);
-            
-            // On prend les 7 premières pour faire la semaine
-            let menuSemaine = recettesMelangees.slice(0, 7);
+            if(id === 'shopping') genererTexteCourses();
+        }
 
-            jours.forEach((jour, index) => {
-                let recette = menuSemaine[index];
+        // --- GESTION DU GARDE-MANGER (FIREBASE) ---
+        async function chargerIngredients() {
+            try {
+                let res = await fetch(`${FIREBASE_URL}outils/pantry.json`);
+                let data = await res.json();
                 
-                let carte = document.createElement("div");
-                carte.className = "carte-jour";
-                // On passe l'objet recette complet à la fonction d'affichage
-                carte.onclick = () => afficherRecette(recette);
-                
-                carte.innerHTML = `
-                    <div class="jour-titre">${jour}</div>
-                    <div class="plat-titre">${recette.nom}</div>
-                    <div class="plat-temps">⏱️ ${recette.temps.split(' | ')[0]}</div>
-                `;
-                
-                grille.appendChild(carte);
+                if (data && data.liste && data.liste.length > 0) {
+                    ingredientsBase = data.liste;
+                } else {
+                    ingredientsBase = ["Riz", "Pâtes", "Poulet", "Œufs", "Courgettes", "Tomates", "Oignons", "Pommes de terre", "Saumon", "Brocolis"];
+                    sauvegarderIngredients();
+                }
+                afficherIngredients();
+            } catch(e) { console.error(e); }
+        }
+
+        async function sauvegarderIngredients() {
+            await fetch(`${FIREBASE_URL}outils/pantry.json`, {
+                method: 'PUT', body: JSON.stringify({ liste: ingredientsBase })
             });
         }
 
-        // Affiche la fenêtre modale avec les détails
-        function afficherRecette(recette) {
+        function afficherIngredients() {
+            const div = document.getElementById('liste-ingredients');
+            div.innerHTML = '';
+            ingredientsBase.sort().forEach((ing, index) => {
+                div.innerHTML += `<div class="ingredient-tag">${ing} <span class="del-btn" onclick="supprimerIngredient(${index})">✕</span></div>`;
+            });
+        }
+
+        function ajouterIngredient(e) {
+            e.preventDefault();
+            let input = document.getElementById('input-ing');
+            let val = input.value.trim();
+            if(val && !ingredientsBase.includes(val)) {
+                val = val.charAt(0).toUpperCase() + val.slice(1);
+                ingredientsBase.push(val);
+                input.value = '';
+                afficherIngredients();
+                sauvegarderIngredients();
+            }
+        }
+
+        function supprimerIngredient(index) {
+            ingredientsBase.splice(index, 1);
+            afficherIngredients();
+            sauvegarderIngredients();
+        }
+
+        // --- GÉNÉRATEUR DE MENU ---
+        function melangerTableau(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function genererMenu() {
+            if(ingredientsBase.length < 5) {
+                alert("Ajoutez au moins 5 ingrédients dans votre garde-manger pour générer un menu varié !");
+                return;
+            }
+
+            const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+            menuActuel = [];
+            
+            let stockMelange = melangerTableau(ingredientsBase);
+            let indexStock = 0;
+
+            const zoneMenu = document.getElementById('zone-menu');
+            zoneMenu.innerHTML = '';
+
+            jours.forEach(jour => {
+                let repas = [];
+                let isDecouverte = false;
+                let decouverteItem = "";
+
+                if (Math.random() < 0.2) {
+                    isDecouverte = true;
+                    decouverteItem = decouvertesSante[Math.floor(Math.random() * decouvertesSante.length)];
+                    repas.push(decouverteItem);
+                }
+
+                let nbIngredients = isDecouverte ? 2 : 3;
+                for(let i=0; i<nbIngredients; i++) {
+                    if(indexStock >= stockMelange.length) {
+                        stockMelange = melangerTableau(ingredientsBase);
+                        indexStock = 0;
+                    }
+                    repas.push(stockMelange[indexStock]);
+                    indexStock++;
+                }
+
+                menuActuel.push({ jour: jour, ingredients: repas });
+
+                let badgeHtml = isDecouverte ? `<span class="badge-decouverte">💡 Idée Santé : ${decouverteItem}</span>` : "";
+                
+                // Préparation des ingrédients pour le bouton de recette
+                let repasJson = JSON.stringify(repas).replace(/"/g, '&quot;');
+
+                zoneMenu.innerHTML += `
+                    <div class="menu-jour">
+                        <div class="jour-titre">${jour}</div>
+                        <div class="jour-repas">Poêlée / Plat avec : <b>${repas.join(' + ')}</b> ${badgeHtml}</div>
+                        <button class="btn-recette" onclick="afficherRecette('${jour}', ${repasJson})">📖 Voir la méthode express</button>
+                    </div>
+                `;
+            });
+        }
+
+        // --- AFFICHAGE DE LA RECETTE GÉNÉRIQUE (MODAL) ---
+        function afficherRecette(jour, ingredients) {
             const details = document.getElementById("recette-details");
             
-            let htmlIngredients = recette.ingredients.map(ing => `<li>${ing}</li>`).join('');
-            let htmlEtapes = recette.etapes.map(etp => `<li>${etp}</li>`).join('');
+            let htmlIngredients = ingredients.map(ing => `<li>${ing}</li>`).join('');
+            
+            // Recette d'assemblage passe-partout
+            let htmlEtapes = `
+                <li><b>La Préparation :</b> Lavez, épluchez (si besoin) et coupez en petits morceaux les ingrédients suivants : ${ingredients.join(', ')}.</li>
+                <li><b>Cuisson des féculents :</b> S'il y a des pâtes, du riz ou des pommes de terre dans la liste, faites-les cuire à part dans l'eau bouillante.</li>
+                <li><b>La Poêlée :</b> Faites chauffer un filet d'huile d'olive dans une grande poêle ou un wok. Faites revenir vos ingrédients pendant 10 à 15 minutes à feu moyen en remuant de temps en temps.</li>
+                <li><b>Assemblage final :</b> Mélangez le tout. Salez, poivrez. Vous pouvez ajouter une touche de crème, de la sauce soja ou des épices de votre placard selon l'inspiration. C'est prêt !</li>
+            `;
 
             details.innerHTML = `
-                <div class="recette-titre">${recette.nom}</div>
-                <div class="recette-badge">⏱️ ${recette.temps}</div>
+                <div class="recette-titre">Poêlée du ${jour}</div>
+                <div class="recette-badge">⏱️ Préparation: 10 min | Cuisson: 15 min</div>
                 
-                <div class="section-titre">Ce qu'il vous faut :</div>
+                <div class="section-titre">Dans la cuisine :</div>
                 <ul class="liste-ing">
                     ${htmlIngredients}
+                    <li>Huile d'olive, sel, poivre (et crème/épices au choix)</li>
                 </ul>
 
-                <div class="section-titre">C'est parti !</div>
+                <div class="section-titre">La Méthode "Zéro Prise de Tête" :</div>
                 <ol class="liste-etapes">
                     ${htmlEtapes}
                 </ol>
@@ -228,15 +286,42 @@
             document.getElementById("modal-recette").style.display = "flex";
         }
 
-        // Ferme la fenêtre modale
         function fermerModal(event) {
             if (event === true || event.target.id === "modal-recette") {
                 document.getElementById("modal-recette").style.display = "none";
             }
         }
 
-        // Lancement initial au chargement de la page
-        genererMenu();
+        // --- LISTE DE COURSES ---
+        function genererTexteCourses() {
+            if(menuActuel.length === 0) return;
+
+            let coursesSet = new Set();
+            menuActuel.forEach(jour => {
+                jour.ingredients.forEach(ing => coursesSet.add(ing));
+            });
+
+            let listeArray = Array.from(coursesSet).sort();
+            let texteFinal = "🛒 MA LISTE DE COURSES (Repas du Soir)\n-----------------------------------------\n";
+            listeArray.forEach(item => {
+                texteFinal += `☐ ${item}\n`;
+            });
+
+            document.getElementById('liste-courses-area').textContent = texteFinal;
+        }
+
+        function copierPressePapier() {
+            let texte = document.getElementById('liste-courses-area').textContent;
+            if(texte.includes("pas encore été généré")) return;
+
+            navigator.clipboard.writeText(texte).then(() => {
+                let msg = document.getElementById('msg-copy');
+                msg.style.display = 'block';
+                setTimeout(() => { msg.style.display = 'none'; }, 2000);
+            });
+        }
+
+        chargerIngredients();
     </script>
 </body>
 </html>
