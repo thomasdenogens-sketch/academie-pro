@@ -88,7 +88,7 @@
 
         /* MODAL DE FIN */
         #modal-fin { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         .modal-stars { font-size: 3.5rem; color: #e2e8f0; margin: 15px 0; letter-spacing: 5px;}
@@ -149,9 +149,12 @@
                     <div class="stat-label">Précision</div>
                 </div>
             </div>
+            
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">Appuyez sur "Entrée" pour continuer</p>
 
-            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 10px;">
                 <button class="btn-action secondary" onclick="retourParcours()">Menu</button>
+                <button class="btn-action secondary" onclick="lancerExerciceActuel()">🔄 Refaire</button>
                 <button class="btn-action" id="btn-next-lesson" onclick="lancerProchaineLecon()">Suivant ➔</button>
             </div>
         </div>
@@ -161,8 +164,8 @@
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         const DB_URL = `${FIREBASE_URL}scores/parent/dactyloPro.json`;
 
-        // --- BASE DE DONNÉES DU PARCOURS (20 Niveaux progressifs) ---
-        const PARCOURS = [
+        // --- BASE DE DONNÉES DU PARCOURS (20 Niveaux fixes + Générateur jusqu'à 100) ---
+        let PARCOURS = [
             { id: 1, titre: "Touches F et J", texte: "ff jj fj jf ff jj fj jf" },
             { id: 2, titre: "Touches D et K", texte: "dd kk dk kd df jk fd kj" },
             { id: 3, titre: "Touches S et L", texte: "ss ll sl ls sf jl ds kl" },
@@ -185,8 +188,55 @@
             { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
+        // Générateur procédural pour les niveaux 21 à 100
+        const lexique = ["azerty", "clavier", "ecran", "souris", "fenetre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", "logiciel", "systeme", "cable", "reseau", "internet", "web", "site", "page", "lien", "code", "donnee", "serveur", "fichier", "dossier"];
+        const speciaux = ["!", "?", ",", ".", ";", ":", "@", "#", "$", "%", "&", "*", "(", ")", "-", "_", "+", "="];
+
+        for(let i = 21; i <= 100; i++) {
+            // Création d'une fonction pseudo-aléatoire basée sur l'ID du niveau (seed)
+            // Cela garantit que le niveau 34 aura TOUJOURS le même texte généré
+            let seed = i;
+            function randomBase() {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280;
+            }
+
+            let nbMots = 10 + Math.floor(i / 5); // Le texte s'allonge progressivement
+            let motsGenere = [];
+
+            for(let j = 0; j < nbMots; j++) {
+                let mot = lexique[Math.floor(randomBase() * lexique.length)];
+                
+                // Ajout de majuscules (à partir du niv 30)
+                if(i >= 30 && randomBase() > 0.6) {
+                    mot = mot.charAt(0).toUpperCase() + mot.slice(1);
+                }
+                
+                // Remplacement par des nombres (à partir du niv 40)
+                if(i >= 40 && randomBase() > 0.8) {
+                    mot = Math.floor(randomBase() * 9999).toString();
+                }
+                
+                // Ajout de caractères spéciaux (à partir du niv 60)
+                if(i >= 60 && randomBase() > 0.75) {
+                    let char = speciaux[Math.floor(randomBase() * speciaux.length)];
+                    mot = randomBase() > 0.5 ? mot + char : char + mot;
+                }
+                
+                motsGenere.push(mot);
+            }
+
+            let titre = "";
+            if (i < 40) titre = "Mots et Majuscules";
+            else if (i < 60) titre = "Nombres et Agilité";
+            else titre = "Caractères Spéciaux";
+
+            PARCOURS.push({ id: i, titre: `${titre} (${i})`, texte: motsGenere.join(" ") });
+        }
+
+
         // --- VARIABLES GLOBALES ---
-        let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} }; // Structure de sauvegarde
+        let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} };
         let leconActuelleId = null;
         
         let texteActuel = "";
@@ -211,12 +261,10 @@
         }
 
         async function sauvegarderProgression(nouveauWPM, nbEtoiles, idLecon) {
-            // Maj Record MPM Global
             if (nouveauWPM > progressionData.recordWPM) {
                 progressionData.recordWPM = nouveauWPM;
             }
 
-            // Maj des étoiles de la leçon (on ne garde que le meilleur score d'étoiles pour un niveau)
             let etoilesActuellesNiveau = progressionData.niveauxStats[idLecon] || 0;
             if (nbEtoiles > etoilesActuellesNiveau) {
                 progressionData.etoilesGlobales += (nbEtoiles - etoilesActuellesNiveau);
@@ -225,7 +273,6 @@
 
             majAffichageParcours();
 
-            // Envoi Firebase (On garde la structure qui remonte vers stats_pro : wpm est requis au premier niveau)
             try {
                 await fetch(DB_URL, { 
                     method: 'PUT', 
@@ -246,13 +293,12 @@
             const grille = document.getElementById('grille-niveaux');
             grille.innerHTML = '';
 
-            let niveauPrecedentReussi = true; // Le niv 1 est tjrs débloqué
+            let niveauPrecedentReussi = true;
 
-            PARCOURS.forEach((lecon, index) => {
+            PARCOURS.forEach((lecon) => {
                 let nbEtoiles = progressionData.niveauxStats[lecon.id] || 0;
                 let estDebloque = niveauPrecedentReussi;
                 
-                // Si on a moins d'1 étoile, le niveau suivant sera verrouillé
                 if (nbEtoiles < 1) niveauPrecedentReussi = false;
 
                 let card = document.createElement('div');
@@ -341,7 +387,22 @@
             return { wpm: motsParMinute, acc: precision };
         }
 
+        // Écouteur principal des touches
         document.addEventListener('keydown', (e) => {
+            // GESTION DE LA TOUCHE ENTRÉE DANS LA MODALE
+            if(document.getElementById('modal-fin').style.display === 'flex') {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    let btnNext = document.getElementById('btn-next-lesson');
+                    if (btnNext.style.display !== 'none') {
+                        lancerProchaineLecon(); // Si réussi, on passe au suivant
+                    } else {
+                        lancerExerciceActuel(); // Si raté, Entrée recommence le niveau
+                    }
+                }
+                return; // On bloque le reste du code de frappe quand la modale est là
+            }
+
             if(partieFinie || document.getElementById('vue-exercice').style.display === 'none') return;
             
             if(e.key.length !== 1 && e.key !== 'Backspace') return;
@@ -381,23 +442,19 @@
         });
 
         function terminerPartie() {
-            // 1. On récupère les stats AVANT de bloquer le jeu
             let statsFinales = majStatsLive() || { wpm: 0, acc: 0 }; 
             
-            // 2. Maintenant on peut déclarer la fin de la partie
             partieFinie = true;
             clearInterval(timer);
             
             let precision = statsFinales.acc;
             let mpm = statsFinales.wpm;
 
-            // Calcul des étoiles
             let etoiles = 0;
             if (precision >= 95) etoiles = 3;
             else if (precision >= 85) etoiles = 2;
             else if (precision >= 70) etoiles = 1;
 
-            // Affichage Modal
             let starsHtml = "";
             for(let i=1; i<=3; i++) { starsHtml += `<span style="color: ${i <= etoiles ? '#fbbf24' : '#cbd5e1'}">★</span>`; }
             
@@ -407,7 +464,6 @@
             document.getElementById('modal-wpm').textContent = mpm;
             document.getElementById('modal-acc').textContent = precision + "%";
             
-            // Masquer le bouton "Suivant" si on n'a pas au moins 1 étoile ou si c'est la dernière leçon
             let btnNext = document.getElementById('btn-next-lesson');
             if (etoiles >= 1 && leconActuelleId < PARCOURS.length) {
                 btnNext.style.display = "inline-block";
@@ -417,7 +473,6 @@
 
             document.getElementById('modal-fin').style.display = "flex";
 
-            // Sauvegarde globale
             sauvegarderProgression(mpm, etoiles, leconActuelleId);
         }
 
