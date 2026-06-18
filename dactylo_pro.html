@@ -381,10 +381,13 @@
         });
 
         function terminerPartie() {
+            // 1. On récupère les stats AVANT de bloquer le jeu
+            let statsFinales = majStatsLive() || { wpm: 0, acc: 0 }; 
+            
+            // 2. Maintenant on peut déclarer la fin de la partie
             partieFinie = true;
             clearInterval(timer);
             
-            let statsFinales = majStatsLive();
             let precision = statsFinales.acc;
             let mpm = statsFinales.wpm;
 
@@ -414,7 +417,7 @@
 
             document.getElementById('modal-fin').style.display = "flex";
 
-            // Sauvegarde globale (uniquement si le niveau est réussi, ou pour maj le MPM)
+            // Sauvegarde globale
             sauvegarderProgression(mpm, etoiles, leconActuelleId);
         }
 
