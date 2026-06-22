@@ -164,7 +164,7 @@
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         const DB_URL = `${FIREBASE_URL}scores/parent/dactyloPro.json`;
 
-        // --- BASE DE DONNÉES DU PARCOURS (20 Niveaux fixes + Générateur jusqu'à 100) ---
+        // --- BASE DE DONNÉES DU PARCOURS ---
         let PARCOURS = [
             { id: 1, titre: "Touches F et J", texte: "ff jj fj jf ff jj fj jf" },
             { id: 2, titre: "Touches D et K", texte: "dd kk dk kd df jk fd kj" },
@@ -183,41 +183,40 @@
             { id: 15, titre: "Mots fréquents 1", texte: "le un la de du et en il" },
             { id: 16, titre: "Mots fréquents 2", texte: "pour dans sur avec sans par" },
             { id: 17, titre: "Les Majuscules (Shift)", texte: "La Le Les Des Sur Dans" },
-            { id: 18, titre: "Ponctuation de base", texte: "Il est la. Elle va bien." },
+            { id: 18, titre: "Ponctuation de base", texte: "Il est là. Elle va bien." }, // Correction ici
             { id: 19, titre: "Phrases simples", texte: "Le chat dort sur le lit." },
             { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
-        // Générateur procédural pour les niveaux 21 à 100
-        const lexique = ["azerty", "clavier", "ecran", "souris", "fenetre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", "logiciel", "systeme", "cable", "reseau", "internet", "web", "site", "page", "lien", "code", "donnee", "serveur", "fichier", "dossier"];
+        // Générateur procédural pour les niveaux 21 à 100 avec orthographe française correcte
+        const lexique = [
+            "clavier", "écran", "souris", "fenêtre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", 
+            "logiciel", "système", "câble", "réseau", "internet", "site", "page", "lien", "code", "donnée", 
+            "serveur", "fichier", "dossier", "développement", "ordinateur", "mémoire", "sécurité"
+        ];
         const speciaux = ["!", "?", ",", ".", ";", ":", "@", "#", "$", "%", "&", "*", "(", ")", "-", "_", "+", "="];
 
         for(let i = 21; i <= 100; i++) {
-            // Création d'une fonction pseudo-aléatoire basée sur l'ID du niveau (seed)
-            // Cela garantit que le niveau 34 aura TOUJOURS le même texte généré
             let seed = i;
             function randomBase() {
                 seed = (seed * 9301 + 49297) % 233280;
                 return seed / 233280;
             }
 
-            let nbMots = 10 + Math.floor(i / 5); // Le texte s'allonge progressivement
+            let nbMots = 10 + Math.floor(i / 5);
             let motsGenere = [];
 
             for(let j = 0; j < nbMots; j++) {
                 let mot = lexique[Math.floor(randomBase() * lexique.length)];
                 
-                // Ajout de majuscules (à partir du niv 30)
                 if(i >= 30 && randomBase() > 0.6) {
                     mot = mot.charAt(0).toUpperCase() + mot.slice(1);
                 }
                 
-                // Remplacement par des nombres (à partir du niv 40)
                 if(i >= 40 && randomBase() > 0.8) {
                     mot = Math.floor(randomBase() * 9999).toString();
                 }
                 
-                // Ajout de caractères spéciaux (à partir du niv 60)
                 if(i >= 60 && randomBase() > 0.75) {
                     let char = speciaux[Math.floor(randomBase() * speciaux.length)];
                     mot = randomBase() > 0.5 ? mot + char : char + mot;
@@ -233,7 +232,6 @@
 
             PARCOURS.push({ id: i, titre: `${titre} (${i})`, texte: motsGenere.join(" ") });
         }
-
 
         // --- VARIABLES GLOBALES ---
         let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} };
@@ -387,20 +385,18 @@
             return { wpm: motsParMinute, acc: precision };
         }
 
-        // Écouteur principal des touches
         document.addEventListener('keydown', (e) => {
-            // GESTION DE LA TOUCHE ENTRÉE DANS LA MODALE
             if(document.getElementById('modal-fin').style.display === 'flex') {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     let btnNext = document.getElementById('btn-next-lesson');
                     if (btnNext.style.display !== 'none') {
-                        lancerProchaineLecon(); // Si réussi, on passe au suivant
+                        lancerProchaineLecon(); 
                     } else {
-                        lancerExerciceActuel(); // Si raté, Entrée recommence le niveau
+                        lancerExerciceActuel(); 
                     }
                 }
-                return; // On bloque le reste du code de frappe quand la modale est là
+                return; 
             }
 
             if(partieFinie || document.getElementById('vue-exercice').style.display === 'none') return;
