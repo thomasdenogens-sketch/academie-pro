@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Master Dactylographie - EdClub Style</title>
+    <title>Master Dactylographie - Coach Adaptatif</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700;800&display=swap');
         
@@ -12,29 +12,24 @@
             font-family: 'Inter', sans-serif; 
             background: linear-gradient(180deg, #87CEEB 0%, #4facfe 100%);
             color: #1e293b; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-height: 100vh; 
-            padding: 30px 20px; 
-            position: relative;
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; padding: 30px 20px; position: relative;
         }
         
-        .container {
-            max-width: 1000px;
-            width: 100%;
-        }
+        .container { max-width: 1000px; width: 100%; }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
         .header h1 { color: #0284c7; font-size: 1.5rem; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 10px;}
         .btn-retour { background: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 700; transition: 0.2s; }
         .btn-retour:hover { background: #cbd5e1; color: #1e293b; }
 
-        /* VUE PARCOURS (NIVEAUX) */
+        /* VUE PARCOURS */
         #vue-parcours { display: flex; flex-direction: column; align-items: center; }
         
-        .header-stats { display: flex; gap: 20px; margin-bottom: 30px; }
+        .header-stats { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center;}
         .stat-badge { background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 20px; font-weight: 800; color: #0369a1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px;}
+        .btn-coach { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 20px; font-weight: 800; cursor: pointer; border: none; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3); transition: 0.2s;}
+        .btn-coach:hover { background: #7c3aed; transform: translateY(-2px); }
         
         .grid-lecons { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; width: 100%; }
         
@@ -49,11 +44,9 @@
         
         .lecon-num { font-size: 2rem; font-weight: 800; color: #334155; margin-bottom: 5px; }
         .lecon-titre { font-size: 0.9rem; color: #64748b; font-weight: 600; margin-bottom: 15px; height: 35px; display: flex; align-items: center; justify-content: center; }
-        
         .stars { color: #cbd5e1; font-size: 1.2rem; }
         .stars span { margin: 0 2px; }
         .star-gold { color: #fbbf24; }
-
         .lock-icon { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; opacity: 0.5;}
 
         /* VUE EXERCICE */
@@ -61,7 +54,6 @@
         
         .top-bar-exo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;}
         .top-bar-exo h2 { color: #0f172a; margin: 0; font-size: 1.4rem; }
-        
         .live-stats { display: flex; gap: 20px; font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.2rem; color: #0284c7; }
         
         .typing-area { 
@@ -73,10 +65,7 @@
         .lettre { position: relative; }
         .lettre.correcte { color: #22c55e; } 
         .lettre.fausse { color: #ef4444; background: rgba(239, 68, 68, 0.2); border-radius: 3px; }
-        .lettre.active::before {
-            content: ''; position: absolute; left: 0; bottom: -4px; width: 100%; height: 4px; 
-            background-color: #0ea5e9; animation: blink 1s infinite;
-        }
+        .lettre.active::before { content: ''; position: absolute; left: 0; bottom: -4px; width: 100%; height: 4px; background-color: #0ea5e9; animation: blink 1s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
         #hidden-input { position: absolute; opacity: 0; width: 1px; height: 1px; top: -100px; left: 0; border: none; padding: 0; }
@@ -87,15 +76,21 @@
         .btn-action.secondary { background: #94a3b8; box-shadow: 0 4px 0 #64748b; }
         .btn-action.secondary:hover { background: #64748b; transform: translateY(2px); box-shadow: 0 2px 0 #475569;}
 
-        /* MODAL DE FIN */
-        #modal-fin { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        /* MODAL DE FIN & STATS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); position: relative;}
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #94a3b8; font-weight: bold;}
+        .close-modal:hover { color: #ef4444; }
         
         .modal-stars { font-size: 3.5rem; color: #e2e8f0; margin: 15px 0; letter-spacing: 5px;}
         .modal-stats { display: flex; justify-content: center; gap: 30px; margin: 25px 0; font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: bold; color: #0f172a;}
         .stat-box { background: #f1f5f9; padding: 15px; border-radius: 12px; width: 120px; }
         .stat-label { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #64748b; text-transform: uppercase; margin-top: 5px; }
+
+        /* Grille des pires touches */
+        .grid-erreurs { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; margin-top: 20px;}
+        .bad-key { background: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 10px; font-weight: bold; color: #b91c1c; font-family: 'Fira Code', monospace;}
+        .bad-key span { display: block; font-size: 0.75rem; color: #7f1d1d; font-family: 'Inter', sans-serif;}
     </style>
 </head>
 <body>
@@ -112,6 +107,7 @@
             <div class="header-stats">
                 <div class="stat-badge">⭐ <span id="total-stars">0</span> Étoiles</div>
                 <div class="stat-badge">🚀 Record : <span id="record-wpm">0</span> MPM</div>
+                <button class="btn-coach" onclick="afficherStatsCoach()">🧠 Mon Profil & Coach</button>
             </div>
             
             <div class="grid-lecons" id="grille-niveaux"></div>
@@ -135,7 +131,7 @@
         </div>
     </div>
 
-    <div id="modal-fin">
+    <div id="modal-fin" class="modal">
         <div class="modal-content">
             <h2 id="modal-title" style="font-size: 2rem; color: #0284c7; margin-bottom: 10px;">Leçon Terminée !</h2>
             <div class="modal-stars" id="modal-stars">★★★</div>
@@ -161,6 +157,21 @@
         </div>
     </div>
 
+    <div id="modal-coach" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('modal-coach').style.display='none'">✕</span>
+            <h2 style="color: #8b5cf6; margin-bottom: 15px;">🧠 Votre Profil Dactylo</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">Voici les touches qui vous posent le plus de problèmes :</p>
+            
+            <div class="grid-erreurs" id="grille-pires-touches">
+                </div>
+
+            <p style="color: #64748b; margin: 25px 0 15px 0; font-size: 0.9rem;">Générez un exercice sur-mesure pour forcer votre mémoire musculaire à corriger ces erreurs :</p>
+            
+            <button class="btn-coach" style="width: 100%; padding: 15px;" onclick="lancerEntrainementCible()">🎯 Lancer l'Entraînement Ciblé</button>
+        </div>
+    </div>
+
     <script>
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         const DB_URL = `${FIREBASE_URL}scores/parent/dactyloPro.json`;
@@ -173,52 +184,12 @@
             "homme", "si", "deux", "femme", "venir", "quand", "grand", "jour", "prendre", "même", "votre", "rien", 
             "petit", "encore", "aussi", "quelque", "trouver", "donner", "temps", "peu", "savoir", "ces", "les", "des", 
             "mes", "tes", "ses", "nos", "vos", "cette", "cet", "oui", "non", "chat", "chien", "maison", "voiture", 
-            "ville", "pays", "monde", "enfant", "fille", "garçon", "toujours", "jamais", "souvent", "parfois"
+            "ville", "pays", "monde", "enfant", "fille", "garçon", "toujours", "jamais", "souvent", "parfois",
+            "clavier", "écran", "souris", "fenêtre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", 
+            "logiciel", "système", "câble", "réseau", "internet", "site", "page", "lien", "code", "donnée", 
+            "serveur", "fichier", "dossier", "développement", "ordinateur", "mémoire", "sécurité"
         ];
 
-        const phrasesSimples = [
-            "Le chat dort sur le canapé chaud.",
-            "Nous allons au cinéma ce soir.",
-            "Il court très vite vers la maison.",
-            "Elle aime manger des pommes rouges.",
-            "Le soleil brille dans le ciel bleu.",
-            "Tu regardes les étoiles la nuit.",
-            "Ils jouent au ballon dans le parc.",
-            "L'oiseau chante sur la petite branche.",
-            "Le train arrive à la gare à l'heure.",
-            "Je bois un grand verre d'eau froide.",
-            "Ma sœur apprend à jouer du piano.",
-            "Le vent souffle doucement ce matin.",
-            "Cet arbre est vraiment très vieux.",
-            "La lune éclaire le chemin sombre."
-        ];
-
-        const phrasesComplexes = [
-            "Bonjour ! Comment allez-vous aujourd'hui ?",
-            "Il a acheté 3 pommes, 2 poires et 1 ananas.",
-            "C'est incroyable, nous avons gagné 100 € !",
-            "La Révolution française a eu lieu en 1789.",
-            "Que fais-tu ? demanda-t-il, surpris.",
-            "L'adresse est : 45 rue de la Liberté, 75000 Paris.",
-            "Attention : danger de mort, ne pas approcher !",
-            "Il a dit : « Je serai là à 18h30 précise. »",
-            "Le taux de réussite est d'environ 99,9 %.",
-            "Mon numéro de téléphone est le 06-12-34-56-78.",
-            "L'e-mail a été envoyé à l'adresse contact@domaine.fr."
-        ];
-
-        const paragraphes = [
-            "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage.",
-            "Rien ne sert de courir ; il faut partir à point. Le lièvre et la tortue en sont un témoignage.",
-            "Je pense, donc je suis, écrivait René Descartes dans le Discours de la méthode.",
-            "La vie est un mystère qu'il faut vivre, et non un problème à résoudre.",
-            "Il était une fois, dans un pays lointain, une princesse merveilleuse qui attendait son prince.",
-            "La dactylographie demande de la patience, de la rigueur et beaucoup de pratique pour être maîtrisée.",
-            "Dans la forêt dense, les loups hurlaient à la lune pleine tandis que le vent soufflait fort.",
-            "L'ordinateur est devenu un outil indispensable dans notre vie de tous les jours."
-        ];
-
-        // --- GÉNÉRATION DU CURRICULUM (100 NIVEAUX) ---
         let PARCOURS = [
             { id: 1, titre: "Touches F et J", texte: "ff jj fj jf ff jj fj jf" },
             { id: 2, titre: "Touches D et K", texte: "dd kk dk kd df jk fd kj" },
@@ -242,48 +213,25 @@
             { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
+        // Génération procédurale 21-100 (Masquée pour garder le code compact, utilise motsFrequents)
         for(let i = 21; i <= 100; i++) {
-            // Algorithme de génération constant pour que chaque niveau soit unique mais fixe
             let seed = i;
             function randomBase() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
-            function pick(arr) { return arr[Math.floor(randomBase() * arr.length)]; }
-
-            let texte = "";
-            let titre = "";
-
-            if (i <= 40) {
-                titre = "Mots fréquents (" + i + ")";
-                let mots = [];
-                let nbMots = 10 + Math.floor((i-20)/2);
-                for(let j=0; j<nbMots; j++) mots.push(pick(motsFrequents));
-                texte = mots.join(" ");
-            } 
-            else if (i <= 60) {
-                titre = "Phrases simples (" + i + ")";
-                let phrases = [];
-                for(let j=0; j<2; j++) phrases.push(pick(phrasesSimples));
-                texte = phrases.join(" ");
+            let nbMots = 10 + Math.floor(i / 5); let motsGenere = [];
+            for(let j = 0; j < nbMots; j++) {
+                let mot = motsFrequents[Math.floor(randomBase() * motsFrequents.length)];
+                if(i >= 30 && randomBase() > 0.6) mot = mot.charAt(0).toUpperCase() + mot.slice(1);
+                if(i >= 40 && randomBase() > 0.8) mot = Math.floor(randomBase() * 9999).toString();
+                if(i >= 60 && randomBase() > 0.75) { let char = ["!", "?", ",", ".", ";"][Math.floor(randomBase() * 5)]; mot += char; }
+                motsGenere.push(mot);
             }
-            else if (i <= 80) {
-                titre = "Ponctuation & Nombres (" + i + ")";
-                let phrases = [];
-                for(let j=0; j<2; j++) phrases.push(pick(phrasesComplexes));
-                texte = phrases.join(" ");
-            }
-            else {
-                titre = "Textes longs (" + i + ")";
-                texte = pick(paragraphes);
-                // 50% de chance d'avoir deux paragraphes enchaînés pour plus de difficulté
-                if (randomBase() > 0.5) texte += " " + pick(paragraphes);
-            }
-
-            PARCOURS.push({ id: i, titre: titre, texte: texte });
+            PARCOURS.push({ id: i, titre: `Niveau ${i}`, texte: motsGenere.join(" ") });
         }
 
-
         // --- VARIABLES GLOBALES ---
-        let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} };
+        let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {}, statsTouches: {} };
         let leconActuelleId = null;
+        let modeCoach = false;
         
         let texteActuel = "";
         let indexFrappe = 0;
@@ -305,6 +253,7 @@
                     progressionData.recordWPM = data.wpm || 0;
                     progressionData.etoilesGlobales = data.etoilesGlobales || 0;
                     progressionData.niveauxStats = data.niveauxStats || {};
+                    progressionData.statsTouches = data.statsTouches || {};
                 }
             } catch(e) {}
             majAffichageParcours();
@@ -313,10 +262,12 @@
         async function sauvegarderProgression(nouveauWPM, nbEtoiles, idLecon) {
             if (nouveauWPM > progressionData.recordWPM) progressionData.recordWPM = nouveauWPM;
 
-            let etoilesActuellesNiveau = progressionData.niveauxStats[idLecon] || 0;
-            if (nbEtoiles > etoilesActuellesNiveau) {
-                progressionData.etoilesGlobales += (nbEtoiles - etoilesActuellesNiveau);
-                progressionData.niveauxStats[idLecon] = nbEtoiles;
+            if (!modeCoach) {
+                let etoilesActuellesNiveau = progressionData.niveauxStats[idLecon] || 0;
+                if (nbEtoiles > etoilesActuellesNiveau) {
+                    progressionData.etoilesGlobales += (nbEtoiles - etoilesActuellesNiveau);
+                    progressionData.niveauxStats[idLecon] = nbEtoiles;
+                }
             }
 
             majAffichageParcours();
@@ -327,7 +278,8 @@
                     body: JSON.stringify({ 
                         wpm: progressionData.recordWPM, 
                         etoilesGlobales: progressionData.etoilesGlobales,
-                        niveauxStats: progressionData.niveauxStats
+                        niveauxStats: progressionData.niveauxStats,
+                        statsTouches: progressionData.statsTouches
                     }) 
                 });
             } catch(e) {}
@@ -368,25 +320,107 @@
         function retourParcours() {
             document.getElementById('vue-exercice').style.display = 'none';
             document.getElementById('modal-fin').style.display = 'none';
+            document.getElementById('modal-coach').style.display = 'none';
             document.getElementById('vue-parcours').style.display = 'flex';
             clearInterval(timer);
         }
 
-        // --- MOTEUR DE FRAPPE GESTION DES ACCENTS ---
-        function preparerLecon(id) {
-            leconActuelleId = id;
-            lancerExerciceActuel();
+        // --- LE COACH ADAPTATIF ---
+        function enregistrerFrappe(lettreAttendue, estCorrect) {
+            let char = lettreAttendue.toLowerCase();
+            if (char === ' ') char = 'Espace';
+            
+            if (!progressionData.statsTouches[char]) {
+                progressionData.statsTouches[char] = { tapes: 0, erreurs: 0 };
+            }
+            
+            progressionData.statsTouches[char].tapes++;
+            if (!estCorrect) progressionData.statsTouches[char].erreurs++;
         }
 
-        function lancerExerciceActuel() {
-            let leconObj = PARCOURS.find(l => l.id === leconActuelleId);
-            texteActuel = leconObj.texte;
+        function obtenirPiresTouches() {
+            let statsArray = [];
+            for (const [char, stats] of Object.entries(progressionData.statsTouches)) {
+                if (stats.tapes > 5) { // Éviter les stats aberrantes sur peu de frappes
+                    let txErreur = (stats.erreurs / stats.tapes) * 100;
+                    if (txErreur > 0) statsArray.push({ char: char, txErreur: txErreur });
+                }
+            }
+            statsArray.sort((a, b) => b.txErreur - a.txErreur);
+            return statsArray.slice(0, 5); // Les 5 pires
+        }
+
+        function afficherStatsCoach() {
+            const piresTouches = obtenirPiresTouches();
+            const grilleErreurs = document.getElementById('grille-pires-touches');
+            grilleErreurs.innerHTML = '';
+
+            if (piresTouches.length === 0) {
+                grilleErreurs.innerHTML = '<p style="grid-column: 1/-1; color: #10b981; font-weight: bold;">Aucune faiblesse détectée pour le moment. Jouez un peu plus !</p>';
+            } else {
+                piresTouches.forEach(stat => {
+                    grilleErreurs.innerHTML += `
+                        <div class="bad-key">
+                            ${stat.char.toUpperCase()}
+                            <span>${Math.round(stat.txErreur)}% d'err.</span>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('modal-coach').style.display = 'flex';
+        }
+
+        function lancerEntrainementCible() {
+            const piresTouches = obtenirPiresTouches();
+            document.getElementById('modal-coach').style.display = 'none';
+            
+            if (piresTouches.length === 0) return alert("Pas assez de données pour générer un entraînement ciblé !");
+
+            let lettresCibles = piresTouches.map(t => t.char);
+            
+            // On cherche des mots contenant ces lettres
+            let motsCibles = motsFrequents.filter(mot => {
+                return lettresCibles.some(lettre => mot.includes(lettre));
+            });
+
+            // Si on n'en trouve pas assez, on génère des suites de touches aléatoires
+            let exerciceGenere = [];
+            if (motsCibles.length < 5) {
+                for(let i=0; i<15; i++) {
+                    let cluster = "";
+                    for(let j=0; j<4; j++) cluster += lettresCibles[Math.floor(Math.random() * lettresCibles.length)];
+                    exerciceGenere.push(cluster);
+                }
+            } else {
+                for(let i=0; i<15; i++) exerciceGenere.push(motsCibles[Math.floor(Math.random() * motsCibles.length)]);
+            }
+
+            modeCoach = true;
+            texteActuel = exerciceGenere.join(" ");
+            
+            document.getElementById('vue-parcours').style.display = 'none';
+            document.getElementById('vue-exercice').style.display = 'block';
+            document.getElementById('titre-exo-en-cours').textContent = `🎯 Entraînement Ciblé`;
+            
+            lancerMoteurSaisie();
+        }
+
+
+        // --- MOTEUR DE FRAPPE ---
+        function preparerLecon(id) {
+            modeCoach = false;
+            leconActuelleId = id;
+            texteActuel = PARCOURS.find(l => l.id === leconActuelleId).texte;
             
             document.getElementById('vue-parcours').style.display = 'none';
             document.getElementById('modal-fin').style.display = 'none';
             document.getElementById('vue-exercice').style.display = 'block';
-            document.getElementById('titre-exo-en-cours').textContent = `Leçon ${leconObj.id} : ${leconObj.titre}`;
+            document.getElementById('titre-exo-en-cours').textContent = `Leçon ${id} : ${PARCOURS.find(l => l.id === id).titre}`;
             
+            lancerMoteurSaisie();
+        }
+
+        function lancerMoteurSaisie() {
             indexFrappe = 0; fautes = 0; totalTapes = 0; lastLength = 0; tempsDebut = null; partieFinie = false;
             clearInterval(timer);
             
@@ -407,6 +441,12 @@
             hiddenInput.focus();
         }
 
+        function lancerExerciceActuel() {
+            if(modeCoach) lancerEntrainementCible();
+            else preparerLecon(leconActuelleId);
+            document.getElementById('modal-fin').style.display = 'none';
+        }
+
         function demarrerTimer() {
             if(!tempsDebut) {
                 tempsDebut = new Date();
@@ -425,14 +465,12 @@
             return { wpm: motsParMinute, acc: precision };
         }
 
-        // Lier la zone de texte pour forcer le focus sur l'input invisible
         document.addEventListener('click', (e) => {
             if (document.getElementById('vue-exercice').style.display === 'block' && document.getElementById('modal-fin').style.display !== 'flex') {
                 hiddenInput.focus();
             }
         });
 
-        // Gestion des touches mortes (Accents) via l'événement Input et Composition
         hiddenInput.addEventListener('compositionstart', () => { isComposing = true; });
         hiddenInput.addEventListener('compositionend', () => { isComposing = false; handleInput(); });
         
@@ -456,7 +494,11 @@
                 let newChars = typed.length - lastLength;
                 totalTapes += newChars;
                 for(let i = lastLength; i < typed.length; i++) {
-                    if (typed[i] !== texteActuel[i]) fautes++;
+                    let estJuste = typed[i] === texteActuel[i];
+                    if (!estJuste) fautes++;
+                    
+                    // Enregistrement pour le Coach IA
+                    enregistrerFrappe(texteActuel[i], estJuste);
                 }
             }
             lastLength = typed.length;
@@ -480,13 +522,12 @@
             }
         }
 
-        // Gestion exclusive de la touche "Entrée" pour relancer dans la modale
         document.addEventListener('keydown', (e) => {
             if(document.getElementById('modal-fin').style.display === 'flex') {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     let btnNext = document.getElementById('btn-next-lesson');
-                    if (btnNext.style.display !== 'none') lancerProchaineLecon(); 
+                    if (btnNext.style.display !== 'none' && !modeCoach) lancerProchaineLecon(); 
                     else lancerExerciceActuel(); 
                 }
             }
@@ -514,7 +555,7 @@
             document.getElementById('modal-acc').textContent = precision + "%";
             
             let btnNext = document.getElementById('btn-next-lesson');
-            if (etoiles >= 1 && leconActuelleId < PARCOURS.length) btnNext.style.display = "inline-block";
+            if (etoiles >= 1 && !modeCoach && leconActuelleId < PARCOURS.length) btnNext.style.display = "inline-block";
             else btnNext.style.display = "none";
 
             document.getElementById('modal-fin').style.display = "flex";
