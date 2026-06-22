@@ -17,6 +17,7 @@
             align-items: center; 
             min-height: 100vh; 
             padding: 30px 20px; 
+            position: relative;
         }
         
         .container {
@@ -66,7 +67,7 @@
         .typing-area { 
             font-family: 'Fira Code', monospace; font-size: 2rem; line-height: 1.6; color: #94a3b8; 
             position: relative; outline: none; letter-spacing: 3px; min-height: 150px;
-            background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;
+            background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; cursor: text;
         }
 
         .lettre { position: relative; }
@@ -78,7 +79,8 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        #hidden-input { position: absolute; opacity: 0; pointer-events: none; }
+        /* Le champ caché qui permet de capter les accents correctement */
+        #hidden-input { position: absolute; opacity: 0; width: 1px; height: 1px; top: -100px; left: 0; border: none; padding: 0; }
         
         .controles-exo { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
         .btn-action { background: #0284c7; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #0369a1;}
@@ -98,6 +100,8 @@
     </style>
 </head>
 <body>
+
+    <input type="text" id="hidden-input" autocomplete="off" spellcheck="false">
 
     <div class="container">
         <div class="header">
@@ -124,8 +128,7 @@
                 </div>
             </div>
 
-            <div class="typing-area" id="zone-texte" tabindex="0"></div>
-            <input type="text" id="hidden-input">
+            <div class="typing-area" id="zone-texte"></div>
 
             <div class="controles-exo">
                 <button class="btn-action secondary" onclick="retourParcours()">Abandonner</button>
@@ -183,12 +186,12 @@
             { id: 15, titre: "Mots fréquents 1", texte: "le un la de du et en il" },
             { id: 16, titre: "Mots fréquents 2", texte: "pour dans sur avec sans par" },
             { id: 17, titre: "Les Majuscules (Shift)", texte: "La Le Les Des Sur Dans" },
-            { id: 18, titre: "Ponctuation de base", texte: "Il est là. Elle va bien." }, // Correction ici
+            { id: 18, titre: "Ponctuation de base", texte: "Il est là. Elle va bien." },
             { id: 19, titre: "Phrases simples", texte: "Le chat dort sur le lit." },
             { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
-        // Générateur procédural pour les niveaux 21 à 100 avec orthographe française correcte
+        // --- GÉNÉRATEUR DES NIVEAUX 21 À 100 ---
         const lexique = [
             "clavier", "écran", "souris", "fenêtre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", 
             "logiciel", "système", "câble", "réseau", "internet", "site", "page", "lien", "code", "donnée", 
@@ -208,28 +211,16 @@
 
             for(let j = 0; j < nbMots; j++) {
                 let mot = lexique[Math.floor(randomBase() * lexique.length)];
-                
-                if(i >= 30 && randomBase() > 0.6) {
-                    mot = mot.charAt(0).toUpperCase() + mot.slice(1);
-                }
-                
-                if(i >= 40 && randomBase() > 0.8) {
-                    mot = Math.floor(randomBase() * 9999).toString();
-                }
-                
+                if(i >= 30 && randomBase() > 0.6) mot = mot.charAt(0).toUpperCase() + mot.slice(1);
+                if(i >= 40 && randomBase() > 0.8) mot = Math.floor(randomBase() * 9999).toString();
                 if(i >= 60 && randomBase() > 0.75) {
                     let char = speciaux[Math.floor(randomBase() * speciaux.length)];
                     mot = randomBase() > 0.5 ? mot + char : char + mot;
                 }
-                
                 motsGenere.push(mot);
             }
 
-            let titre = "";
-            if (i < 40) titre = "Mots et Majuscules";
-            else if (i < 60) titre = "Nombres et Agilité";
-            else titre = "Caractères Spéciaux";
-
+            let titre = i < 40 ? "Mots et Majuscules" : (i < 60 ? "Nombres et Agilité" : "Caractères Spéciaux");
             PARCOURS.push({ id: i, titre: `${titre} (${i})`, texte: motsGenere.join(" ") });
         }
 
@@ -240,9 +231,13 @@
         let texteActuel = "";
         let indexFrappe = 0;
         let fautes = 0;
+        let totalTapes = 0;
+        let lastLength = 0;
         let tempsDebut = null;
         let timer = null;
         let partieFinie = false;
+        let isComposing = false;
+        const hiddenInput = document.getElementById('hidden-input');
 
         // --- SAUVEGARDE & CLOUD ---
         async function chargerProgression() {
@@ -254,14 +249,12 @@
                     progressionData.etoilesGlobales = data.etoilesGlobales || 0;
                     progressionData.niveauxStats = data.niveauxStats || {};
                 }
-            } catch(e) { console.error("Erreur Cloud:", e); }
+            } catch(e) {}
             majAffichageParcours();
         }
 
         async function sauvegarderProgression(nouveauWPM, nbEtoiles, idLecon) {
-            if (nouveauWPM > progressionData.recordWPM) {
-                progressionData.recordWPM = nouveauWPM;
-            }
+            if (nouveauWPM > progressionData.recordWPM) progressionData.recordWPM = nouveauWPM;
 
             let etoilesActuellesNiveau = progressionData.niveauxStats[idLecon] || 0;
             if (nbEtoiles > etoilesActuellesNiveau) {
@@ -280,7 +273,7 @@
                         niveauxStats: progressionData.niveauxStats
                     }) 
                 });
-            } catch(e) { console.error("Erreur sauvegarde Cloud:", e); }
+            } catch(e) {}
         }
 
         // --- INTERFACE PARCOURS ---
@@ -290,22 +283,18 @@
 
             const grille = document.getElementById('grille-niveaux');
             grille.innerHTML = '';
-
             let niveauPrecedentReussi = true;
 
             PARCOURS.forEach((lecon) => {
                 let nbEtoiles = progressionData.niveauxStats[lecon.id] || 0;
                 let estDebloque = niveauPrecedentReussi;
-                
                 if (nbEtoiles < 1) niveauPrecedentReussi = false;
 
                 let card = document.createElement('div');
                 card.className = `carte-lecon ${estDebloque ? '' : 'verrouille'}`;
                 
                 let starsHtml = "";
-                for(let i=1; i<=3; i++) {
-                    starsHtml += `<span class="${i <= nbEtoiles ? 'star-gold' : ''}">★</span>`;
-                }
+                for(let i=1; i<=3; i++) { starsHtml += `<span class="${i <= nbEtoiles ? 'star-gold' : ''}">★</span>`; }
 
                 card.innerHTML = `
                     ${estDebloque ? '' : '<div class="lock-icon">🔒</div>'}
@@ -314,10 +303,7 @@
                     <div class="stars">${starsHtml}</div>
                 `;
 
-                if (estDebloque) {
-                    card.onclick = () => preparerLecon(lecon.id);
-                }
-
+                if (estDebloque) card.onclick = () => preparerLecon(lecon.id);
                 grille.appendChild(card);
             });
         }
@@ -329,7 +315,7 @@
             clearInterval(timer);
         }
 
-        // --- MOTEUR DE FRAPPE ---
+        // --- MOTEUR DE FRAPPE GESTION DES ACCENTS ---
         function preparerLecon(id) {
             leconActuelleId = id;
             lancerExerciceActuel();
@@ -342,10 +328,9 @@
             document.getElementById('vue-parcours').style.display = 'none';
             document.getElementById('modal-fin').style.display = 'none';
             document.getElementById('vue-exercice').style.display = 'block';
-            
             document.getElementById('titre-exo-en-cours').textContent = `Leçon ${leconObj.id} : ${leconObj.titre}`;
             
-            indexFrappe = 0; fautes = 0; tempsDebut = null; partieFinie = false;
+            indexFrappe = 0; fautes = 0; totalTapes = 0; lastLength = 0; tempsDebut = null; partieFinie = false;
             clearInterval(timer);
             
             document.getElementById('live-wpm').textContent = "0 MPM";
@@ -353,7 +338,6 @@
 
             const zone = document.getElementById('zone-texte');
             zone.innerHTML = "";
-            
             for(let i=0; i<texteActuel.length; i++) {
                 let span = document.createElement('span');
                 span.textContent = texteActuel[i];
@@ -362,9 +346,8 @@
                 zone.appendChild(span);
             }
             
-            document.getElementById('hidden-input').value = "";
-            document.getElementById('hidden-input').focus();
-            zone.focus();
+            hiddenInput.value = "";
+            hiddenInput.focus();
         }
 
         function demarrerTimer() {
@@ -375,8 +358,8 @@
         }
 
         function majStatsLive() {
-            if (indexFrappe === 0 || partieFinie) return;
-            let precision = Math.max(0, Math.floor(((indexFrappe - fautes) / indexFrappe) * 100)) || 100;
+            if (indexFrappe === 0 || partieFinie) return { wpm: 0, acc: 100 };
+            let precision = Math.max(0, Math.floor(((totalTapes - fautes) / totalTapes) * 100)) || 100;
             let tempsMinutes = (new Date() - tempsDebut) / 60000;
             let motsParMinute = tempsMinutes > 0 ? Math.floor((indexFrappe / 5) / tempsMinutes) : 0;
 
@@ -385,63 +368,79 @@
             return { wpm: motsParMinute, acc: precision };
         }
 
+        // Lier la zone de texte pour forcer le focus sur l'input invisible
+        document.addEventListener('click', (e) => {
+            if (document.getElementById('vue-exercice').style.display === 'block' && document.getElementById('modal-fin').style.display !== 'flex') {
+                hiddenInput.focus();
+            }
+        });
+
+        // Gestion des touches mortes (Accents) via l'événement Input et Composition
+        hiddenInput.addEventListener('compositionstart', () => { isComposing = true; });
+        hiddenInput.addEventListener('compositionend', () => { isComposing = false; handleInput(); });
+        
+        hiddenInput.addEventListener('input', () => {
+            if (isComposing) return; // On ignore les événements intermédiaires (le ^ tout seul)
+            handleInput();
+        });
+
+        function handleInput() {
+            if(partieFinie || document.getElementById('vue-exercice').style.display === 'none') return;
+            demarrerTimer();
+            
+            let typed = hiddenInput.value;
+            
+            // Empêche de taper plus loin que le texte
+            if(typed.length > texteActuel.length) {
+                typed = typed.substring(0, texteActuel.length);
+                hiddenInput.value = typed;
+            }
+
+            // On vérifie seulement les "nouvelles" lettres tapées pour calculer les fautes
+            if (typed.length > lastLength) {
+                let newChars = typed.length - lastLength;
+                totalTapes += newChars;
+                for(let i = lastLength; i < typed.length; i++) {
+                    if (typed[i] !== texteActuel[i]) fautes++;
+                }
+            }
+            lastLength = typed.length;
+            indexFrappe = typed.length;
+
+            // Mise à jour visuelle des lettres
+            let spans = document.querySelectorAll('.lettre');
+            spans.forEach((span, i) => {
+                span.className = 'lettre';
+                if (i < typed.length) {
+                    if (typed[i] === texteActuel[i]) span.classList.add('correcte');
+                    else span.classList.add('fausse');
+                } else if (i === typed.length) {
+                    span.classList.add('active');
+                }
+            });
+
+            majStatsLive();
+
+            if(typed.length >= texteActuel.length) {
+                terminerPartie();
+            }
+        }
+
+        // Gestion exclusive de la touche "Entrée" pour relancer dans la modale
         document.addEventListener('keydown', (e) => {
             if(document.getElementById('modal-fin').style.display === 'flex') {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     let btnNext = document.getElementById('btn-next-lesson');
-                    if (btnNext.style.display !== 'none') {
-                        lancerProchaineLecon(); 
-                    } else {
-                        lancerExerciceActuel(); 
-                    }
+                    if (btnNext.style.display !== 'none') lancerProchaineLecon(); 
+                    else lancerExerciceActuel(); 
                 }
-                return; 
-            }
-
-            if(partieFinie || document.getElementById('vue-exercice').style.display === 'none') return;
-            
-            if(e.key.length !== 1 && e.key !== 'Backspace') return;
-            
-            demarrerTimer();
-            let spans = document.querySelectorAll('.lettre');
-
-            if(e.key === 'Backspace') {
-                if(indexFrappe > 0) {
-                    spans[indexFrappe].classList.remove('active');
-                    indexFrappe--;
-                    spans[indexFrappe].classList.remove('correcte', 'fausse');
-                    spans[indexFrappe].classList.add('active');
-                }
-                return;
-            }
-
-            let caractereAttendu = texteActuel[indexFrappe];
-            
-            if(e.key === caractereAttendu) {
-                spans[indexFrappe].classList.add('correcte');
-            } else {
-                spans[indexFrappe].classList.add('fausse');
-                fautes++;
-            }
-
-            spans[indexFrappe].classList.remove('active');
-            indexFrappe++;
-
-            majStatsLive();
-
-            if(indexFrappe >= texteActuel.length) {
-                terminerPartie();
-            } else {
-                spans[indexFrappe].classList.add('active');
             }
         });
 
         function terminerPartie() {
             let statsFinales = majStatsLive() || { wpm: 0, acc: 0 }; 
-            
-            partieFinie = true;
-            clearInterval(timer);
+            partieFinie = true; clearInterval(timer);
             
             let precision = statsFinales.acc;
             let mpm = statsFinales.wpm;
@@ -461,24 +460,18 @@
             document.getElementById('modal-acc').textContent = precision + "%";
             
             let btnNext = document.getElementById('btn-next-lesson');
-            if (etoiles >= 1 && leconActuelleId < PARCOURS.length) {
-                btnNext.style.display = "inline-block";
-            } else {
-                btnNext.style.display = "none";
-            }
+            if (etoiles >= 1 && leconActuelleId < PARCOURS.length) btnNext.style.display = "inline-block";
+            else btnNext.style.display = "none";
 
             document.getElementById('modal-fin').style.display = "flex";
-
             sauvegarderProgression(mpm, etoiles, leconActuelleId);
+            hiddenInput.blur(); // Retire le focus pour éviter de taper dans le vide pendant la modale
         }
 
         function lancerProchaineLecon() {
-            if (leconActuelleId < PARCOURS.length) {
-                preparerLecon(leconActuelleId + 1);
-            }
+            if (leconActuelleId < PARCOURS.length) preparerLecon(leconActuelleId + 1);
         }
 
-        // Lancement
         chargerProgression();
     </script>
 </body>
