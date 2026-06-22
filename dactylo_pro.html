@@ -65,8 +65,8 @@
         .live-stats { display: flex; gap: 20px; font-family: 'Fira Code', monospace; font-weight: bold; font-size: 1.2rem; color: #0284c7; }
         
         .typing-area { 
-            font-family: 'Fira Code', monospace; font-size: 2rem; line-height: 1.6; color: #94a3b8; 
-            position: relative; outline: none; letter-spacing: 3px; min-height: 150px;
+            font-family: 'Fira Code', monospace; font-size: 1.8rem; line-height: 1.6; color: #94a3b8; 
+            position: relative; outline: none; letter-spacing: 2px; min-height: 150px;
             background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; cursor: text;
         }
 
@@ -79,7 +79,6 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        /* Le champ caché qui permet de capter les accents correctement */
         #hidden-input { position: absolute; opacity: 0; width: 1px; height: 1px; top: -100px; left: 0; border: none; padding: 0; }
         
         .controles-exo { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
@@ -115,8 +114,7 @@
                 <div class="stat-badge">🚀 Record : <span id="record-wpm">0</span> MPM</div>
             </div>
             
-            <div class="grid-lecons" id="grille-niveaux">
-                </div>
+            <div class="grid-lecons" id="grille-niveaux"></div>
         </div>
 
         <div id="vue-exercice">
@@ -167,7 +165,60 @@
         const FIREBASE_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/";
         const DB_URL = `${FIREBASE_URL}scores/parent/dactyloPro.json`;
 
-        // --- BASE DE DONNÉES DU PARCOURS ---
+        // --- BASES DE DONNÉES PÉDAGOGIQUES ---
+        const motsFrequents = [
+            "le", "de", "un", "être", "et", "à", "il", "avoir", "ne", "je", "son", "qui", "dans", "en", "du", "elle", 
+            "au", "ce", "pour", "pas", "que", "vous", "par", "sur", "faire", "plus", "dire", "me", "on", "mon", "lui", 
+            "nous", "comme", "mais", "pouvoir", "avec", "tout", "aller", "voir", "bien", "où", "sans", "tu", "ou", 
+            "homme", "si", "deux", "femme", "venir", "quand", "grand", "jour", "prendre", "même", "votre", "rien", 
+            "petit", "encore", "aussi", "quelque", "trouver", "donner", "temps", "peu", "savoir", "ces", "les", "des", 
+            "mes", "tes", "ses", "nos", "vos", "cette", "cet", "oui", "non", "chat", "chien", "maison", "voiture", 
+            "ville", "pays", "monde", "enfant", "fille", "garçon", "toujours", "jamais", "souvent", "parfois"
+        ];
+
+        const phrasesSimples = [
+            "Le chat dort sur le canapé chaud.",
+            "Nous allons au cinéma ce soir.",
+            "Il court très vite vers la maison.",
+            "Elle aime manger des pommes rouges.",
+            "Le soleil brille dans le ciel bleu.",
+            "Tu regardes les étoiles la nuit.",
+            "Ils jouent au ballon dans le parc.",
+            "L'oiseau chante sur la petite branche.",
+            "Le train arrive à la gare à l'heure.",
+            "Je bois un grand verre d'eau froide.",
+            "Ma sœur apprend à jouer du piano.",
+            "Le vent souffle doucement ce matin.",
+            "Cet arbre est vraiment très vieux.",
+            "La lune éclaire le chemin sombre."
+        ];
+
+        const phrasesComplexes = [
+            "Bonjour ! Comment allez-vous aujourd'hui ?",
+            "Il a acheté 3 pommes, 2 poires et 1 ananas.",
+            "C'est incroyable, nous avons gagné 100 € !",
+            "La Révolution française a eu lieu en 1789.",
+            "Que fais-tu ? demanda-t-il, surpris.",
+            "L'adresse est : 45 rue de la Liberté, 75000 Paris.",
+            "Attention : danger de mort, ne pas approcher !",
+            "Il a dit : « Je serai là à 18h30 précise. »",
+            "Le taux de réussite est d'environ 99,9 %.",
+            "Mon numéro de téléphone est le 06-12-34-56-78.",
+            "L'e-mail a été envoyé à l'adresse contact@domaine.fr."
+        ];
+
+        const paragraphes = [
+            "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage.",
+            "Rien ne sert de courir ; il faut partir à point. Le lièvre et la tortue en sont un témoignage.",
+            "Je pense, donc je suis, écrivait René Descartes dans le Discours de la méthode.",
+            "La vie est un mystère qu'il faut vivre, et non un problème à résoudre.",
+            "Il était une fois, dans un pays lointain, une princesse merveilleuse qui attendait son prince.",
+            "La dactylographie demande de la patience, de la rigueur et beaucoup de pratique pour être maîtrisée.",
+            "Dans la forêt dense, les loups hurlaient à la lune pleine tandis que le vent soufflait fort.",
+            "L'ordinateur est devenu un outil indispensable dans notre vie de tous les jours."
+        ];
+
+        // --- GÉNÉRATION DU CURRICULUM (100 NIVEAUX) ---
         let PARCOURS = [
             { id: 1, titre: "Touches F et J", texte: "ff jj fj jf ff jj fj jf" },
             { id: 2, titre: "Touches D et K", texte: "dd kk dk kd df jk fd kj" },
@@ -191,38 +242,44 @@
             { id: 20, titre: "Le Grand Défi", texte: "La dactylographie permet de taper vite. C'est un outil indispensable !" }
         ];
 
-        // --- GÉNÉRATEUR DES NIVEAUX 21 À 100 ---
-        const lexique = [
-            "clavier", "écran", "souris", "fenêtre", "bureau", "chaise", "lampe", "tapis", "porte", "mur", 
-            "logiciel", "système", "câble", "réseau", "internet", "site", "page", "lien", "code", "donnée", 
-            "serveur", "fichier", "dossier", "développement", "ordinateur", "mémoire", "sécurité"
-        ];
-        const speciaux = ["!", "?", ",", ".", ";", ":", "@", "#", "$", "%", "&", "*", "(", ")", "-", "_", "+", "="];
-
         for(let i = 21; i <= 100; i++) {
+            // Algorithme de génération constant pour que chaque niveau soit unique mais fixe
             let seed = i;
-            function randomBase() {
-                seed = (seed * 9301 + 49297) % 233280;
-                return seed / 233280;
+            function randomBase() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+            function pick(arr) { return arr[Math.floor(randomBase() * arr.length)]; }
+
+            let texte = "";
+            let titre = "";
+
+            if (i <= 40) {
+                titre = "Mots fréquents (" + i + ")";
+                let mots = [];
+                let nbMots = 10 + Math.floor((i-20)/2);
+                for(let j=0; j<nbMots; j++) mots.push(pick(motsFrequents));
+                texte = mots.join(" ");
+            } 
+            else if (i <= 60) {
+                titre = "Phrases simples (" + i + ")";
+                let phrases = [];
+                for(let j=0; j<2; j++) phrases.push(pick(phrasesSimples));
+                texte = phrases.join(" ");
+            }
+            else if (i <= 80) {
+                titre = "Ponctuation & Nombres (" + i + ")";
+                let phrases = [];
+                for(let j=0; j<2; j++) phrases.push(pick(phrasesComplexes));
+                texte = phrases.join(" ");
+            }
+            else {
+                titre = "Textes longs (" + i + ")";
+                texte = pick(paragraphes);
+                // 50% de chance d'avoir deux paragraphes enchaînés pour plus de difficulté
+                if (randomBase() > 0.5) texte += " " + pick(paragraphes);
             }
 
-            let nbMots = 10 + Math.floor(i / 5);
-            let motsGenere = [];
-
-            for(let j = 0; j < nbMots; j++) {
-                let mot = lexique[Math.floor(randomBase() * lexique.length)];
-                if(i >= 30 && randomBase() > 0.6) mot = mot.charAt(0).toUpperCase() + mot.slice(1);
-                if(i >= 40 && randomBase() > 0.8) mot = Math.floor(randomBase() * 9999).toString();
-                if(i >= 60 && randomBase() > 0.75) {
-                    let char = speciaux[Math.floor(randomBase() * speciaux.length)];
-                    mot = randomBase() > 0.5 ? mot + char : char + mot;
-                }
-                motsGenere.push(mot);
-            }
-
-            let titre = i < 40 ? "Mots et Majuscules" : (i < 60 ? "Nombres et Agilité" : "Caractères Spéciaux");
-            PARCOURS.push({ id: i, titre: `${titre} (${i})`, texte: motsGenere.join(" ") });
+            PARCOURS.push({ id: i, titre: titre, texte: texte });
         }
+
 
         // --- VARIABLES GLOBALES ---
         let progressionData = { recordWPM: 0, etoilesGlobales: 0, niveauxStats: {} };
@@ -380,7 +437,7 @@
         hiddenInput.addEventListener('compositionend', () => { isComposing = false; handleInput(); });
         
         hiddenInput.addEventListener('input', () => {
-            if (isComposing) return; // On ignore les événements intermédiaires (le ^ tout seul)
+            if (isComposing) return;
             handleInput();
         });
 
@@ -390,13 +447,11 @@
             
             let typed = hiddenInput.value;
             
-            // Empêche de taper plus loin que le texte
             if(typed.length > texteActuel.length) {
                 typed = typed.substring(0, texteActuel.length);
                 hiddenInput.value = typed;
             }
 
-            // On vérifie seulement les "nouvelles" lettres tapées pour calculer les fautes
             if (typed.length > lastLength) {
                 let newChars = typed.length - lastLength;
                 totalTapes += newChars;
@@ -407,7 +462,6 @@
             lastLength = typed.length;
             indexFrappe = typed.length;
 
-            // Mise à jour visuelle des lettres
             let spans = document.querySelectorAll('.lettre');
             spans.forEach((span, i) => {
                 span.className = 'lettre';
@@ -465,7 +519,7 @@
 
             document.getElementById('modal-fin').style.display = "flex";
             sauvegarderProgression(mpm, etoiles, leconActuelleId);
-            hiddenInput.blur(); // Retire le focus pour éviter de taper dans le vide pendant la modale
+            hiddenInput.blur();
         }
 
         function lancerProchaineLecon() {
