@@ -82,7 +82,7 @@
         .lettre { position: relative; }
         .lettre.correcte { color: #10b981; } 
         .lettre.fausse { color: #ef4444; background: rgba(239, 68, 68, 0.15); border-radius: 3px; }
-        .lettre.active { color: #0f172a; }
+        /* CORRECTION : On enlève le texte noir sur la lettre active pour ne plus déconcentrer */
         .lettre.active::before { content: ''; position: absolute; left: 0; bottom: -2px; width: 100%; height: 3px; background-color: #38bdf8; animation: blink 1s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
@@ -258,7 +258,6 @@
         let seqItems = [];
         for(let i=0; i<5; i++) {
             sequencesCourantes.forEach(seq => {
-                // Mélanger les mots de la séquence pour faire des exos variés
                 let phrase = [...seq.mots].sort(() => Math.random()-0.5).join(" ") + " " + seq.mots[0];
                 seqItems.push({ titre: `Séquence : ${seq.t}`, texte: phrase });
             });
@@ -287,7 +286,6 @@
         let cultureItems = [];
         for(let i=0; i<65; i++) {
             let texteCourt = faitsCulturels[i % faitsCulturels.length];
-            // Ajouter un 2e fait aléatoire pour rallonger l'exo
             let texteLong = texteCourt + " " + faitsCulturels[Math.floor(Math.random()*faitsCulturels.length)];
             cultureItems.push({ titre: `Fait n°${i+1}`, texte: texteLong });
         }
@@ -361,10 +359,7 @@
             let currentGrid = null;
 
             PARCOURS.forEach((lecon) => {
-                // Créer une nouvelle section si le nom change (et insérer une leçon "Révision" à la fin de chaque section)
                 if (lecon.section !== currentSection) {
-                    
-                    // Si on vient de finir une section, on glisse un niveau "Coach" avant de passer à la suite
                     if (currentGrid !== null) {
                         let divRev = creerCarteRevision(lecon.id - 0.5, niveauPrecedentReussi);
                         currentGrid.appendChild(divRev);
@@ -409,8 +404,6 @@
         function creerCarteRevision(idFictif, estDebloque) {
             let card = document.createElement('div');
             card.className = `carte-lecon cat-revision ${estDebloque ? '' : 'verrouille'}`;
-            
-            // Les révisions ne donnent pas d'étoiles permanentes dans l'affichage, c'est juste de la pratique
             card.innerHTML = `
                 ${estDebloque ? '' : '<div class="lock-icon">🔒</div>'}
                 <div class="lecon-header">
@@ -458,11 +451,9 @@
             
             let exerciceGenere = [];
             if (piresTouches.length === 0) {
-                // Pas assez d'erreurs, on donne un texte de culture au pif
                 exerciceGenere.push(faitsCulturels[Math.floor(Math.random() * faitsCulturels.length)]);
             } else {
                 let lettresCibles = piresTouches.map(t => t.char);
-                // Construire un texte qui matraque ces lettres
                 for(let i=0; i<15; i++) {
                     let cluster = "";
                     for(let j=0; j<5; j++) cluster += lettresCibles[Math.floor(Math.random() * lettresCibles.length)];
@@ -470,7 +461,7 @@
                 }
             }
 
-            leconActuelleId = "coach"; // Identifiant spécial pour ne pas sauvegarder d'étoiles sur la grille
+            leconActuelleId = "coach"; 
             texteActuel = exerciceGenere.join(" ");
             
             document.getElementById('vue-parcours').style.display = 'none';
@@ -599,7 +590,7 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     let btnNext = document.getElementById('btn-next-lesson');
-                    if (btnNext.style.display !== 'none') lancerProchaineLecon(); 
+                    if (btnNext.style.display !== 'none' && leconActuelleId !== "coach") lancerProchaineLecon(); 
                     else lancerExerciceActuel(); 
                 }
             }
@@ -627,7 +618,6 @@
             document.getElementById('modal-acc').textContent = precision + "%";
             
             let btnNext = document.getElementById('btn-next-lesson');
-            // Si c'est le coach, pas de bouton suivant
             if (leconActuelleId === "coach") {
                 btnNext.style.display = "none";
             } else if (etoiles >= 1 && leconActuelleId < PARCOURS.length) {
@@ -638,7 +628,6 @@
 
             document.getElementById('modal-fin').style.display = "flex";
             
-            // Sauvegarder uniquement si ce n'est pas le niveau Coach temporaire
             if (leconActuelleId !== "coach") {
                 sauvegarderProgression(mpm, etoiles, leconActuelleId);
             }
