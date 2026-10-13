@@ -10,7 +10,6 @@
         h1 { color: #3498db; font-weight: 900; margin-bottom: 5px; }
         .sous-titre { color: #bdc3c7; margin-bottom: 20px; font-weight: bold; text-align: center; }
 
-        /* Actions en haut de l'écran */
         .header-actions { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
         
         .btn-action { font-family: 'Nunito', sans-serif; font-weight: bold; font-size: 1.1rem; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; color: white; display: flex; align-items: center; gap: 8px;}
@@ -41,7 +40,6 @@
         .btn-details { background: #ecf0f1; border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; color: #2980b9; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-details:hover { background: #3498db; color: white; }
 
-        /* Modales (Lecture et Création) */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; color: #2c3e50; box-shadow: 0 20px 40px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;}
         
@@ -49,7 +47,6 @@
         .modal h3 { color: #e67e22; font-size: 1.1rem; margin-top: 20px; margin-bottom: 5px; }
         .modal p { line-height: 1.6; }
         
-        /* Formulaire de création */
         .form-groupe { margin-bottom: 15px; text-align: left; }
         .form-groupe label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
         .form-groupe input, .form-groupe textarea { width: 100%; padding: 10px; border: 2px solid #bdc3c7; border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 1rem; }
@@ -65,7 +62,6 @@
     <h1>🛠️ Mon Carnet de Développeur</h1>
     <p class="sous-titre">Garde une trace de toutes nos idées de code pour Théo et Lola !</p>
 
-    <!-- Boutons d'action -->
     <div class="header-actions">
         <button class="btn-action btn-ajouter" onclick="ouvrirModalCreation()">➕ Nouvelle Idée</button>
         <button class="btn-action btn-reset" onclick="reinitialiserPositions()">🔄 Réinitialiser les positions</button>
@@ -104,27 +100,10 @@
     <div id="modal-creation" class="overlay">
         <div class="modal">
             <h2>✨ Ajouter une nouvelle idée</h2>
-            
-            <div class="form-groupe">
-                <label>Catégorie (Tag) :</label>
-                <input type="text" id="input-tag" placeholder="Ex: Moteur Scratch, Nouveau Jeu...">
-            </div>
-            
-            <div class="form-groupe">
-                <label>Titre de l'idée :</label>
-                <input type="text" id="input-titre" placeholder="Ex: 📊 Mini-Tableur (Formules)">
-            </div>
-            
-            <div class="form-groupe">
-                <label>👁️ Concept Visuel :</label>
-                <textarea id="input-visuel" placeholder="Que verra l'enfant à l'écran ?"></textarea>
-            </div>
-            
-            <div class="form-groupe">
-                <label>👨‍💻 Apprentissage du Code :</label>
-                <textarea id="input-code" placeholder="Quels concepts de programmation allons-nous utiliser ?"></textarea>
-            </div>
-
+            <div class="form-groupe"><label>Catégorie (Tag) :</label><input type="text" id="input-tag" placeholder="Ex: Moteur Scratch, Nouveau Jeu..."></div>
+            <div class="form-groupe"><label>Titre de l'idée :</label><input type="text" id="input-titre" placeholder="Ex: 📊 Mini-Tableur (Formules)"></div>
+            <div class="form-groupe"><label>👁️ Concept Visuel :</label><textarea id="input-visuel" placeholder="Que verra l'enfant à l'écran ?"></textarea></div>
+            <div class="form-groupe"><label>👨‍💻 Apprentissage du Code :</label><textarea id="input-code" placeholder="Quels concepts de programmation allons-nous utiliser ?"></textarea></div>
             <button class="btn-fermer" onclick="fermerModalCreation()">Annuler</button>
             <button class="btn-sauvegarder" onclick="creerEtSauvegarderCarte()">Enregistrer l'idée</button>
             <div style="clear:both;"></div>
@@ -140,61 +119,55 @@
         
         let positionsCloud = {};
 
-        // Les idées de base incluses par défaut dans le code
+        // =======================================================================
+        // 📚 LA BASE DE DONNÉES DES IDÉES (Restaurée et Complétée)
+        // =======================================================================
         const IDEES_DE_BASE = {
-            'id_geo_1': { colonneInitiale: "col-encours", tag: "Géométrie", titre: "📐 GéoPlan Dynamique (GeoGebra)", visuel: "L'enfant clique sur un sommet de sa forme géométrique, maintient le clic, et déplace la souris.", code: "Écouteurs d'Événements complexes (mousedown, mousemove, mouseup)." },
+            'id_geo_1': { colonneInitiale: "col-termine", tag: "Géométrie", titre: "📐 GéoPlan Dynamique (GeoGebra)", visuel: "L'enfant clique sur un sommet de sa forme géométrique, maintient le clic, et déplace la souris.", code: "Écouteurs d'Événements complexes (mousedown, mousemove, mouseup)." },
             'id_code_1': { colonneInitiale: "col-termine", tag: "Moteur Scratch", titre: "🤔 Bloc de Condition (SI... ALORS)", visuel: "Un bloc jaune en forme de mâchoire.", code: "Initiation à l'algorithmique : Les conditions (If/Else) et l'évaluation de Booléens." },
             'id_code_2': { colonneInitiale: "col-termine", tag: "Moteur Scratch", titre: "🔁 Implémentation des Boucles", visuel: "Blocs Répéter et Fin Répéter avec indentation visuelle.", code: "Utilisation d'une 'Pile' (Stack) en mémoire." },
             'id_code_3': { colonneInitiale: "col-backlog", tag: "Moteur Scratch", titre: "✨ Fonctions personnalisées", visuel: "Créer un nouveau bloc unique à partir de plusieurs blocs.", code: "Principe d'Encapsulation et de Réutilisabilité (DRY)." },
             'id_code_4': { colonneInitiale: "col-backlog", tag: "Moteur Scratch", titre: "🌀 Portails de Téléportation", visuel: "Deux cases colorées liées entre elles.", code: "Manipulation des Tableaux (Arrays) et coordonnées X/Y." },
+            'id_nouv_1': { colonneInitiale: "col-backlog", tag: "Nouveau Jeu", titre: "📊 Mini-Tableur (Formules)", visuel: "Une grille type Excel. L'enfant doit taper des formules (ex: =A1+B2).", code: "Création d'un 'Parseur' (Analyseur syntaxique)." },
+            'id_nouv_2': { colonneInitiale: "col-backlog", tag: "Nouveau Jeu", titre: "💻 Simulateur OS & Pix", visuel: "Un faux bureau d'ordinateur dans le navigateur.", code: "Manipulation du DOM (Document Object Model) et chemins virtuels." },
+            'id_nouv_3': { colonneInitiale: "col-backlog", tag: "Nouveau Jeu", titre: "⌨️ Algobox (Pseudo-code texte)", visuel: "L'enfant doit taper les ordres au clavier (ex: 'POUR i DE 1 A 3 FAIRE').", code: "Passage du script visuel au vrai langage de programmation textuel." },
+            'id_menu_1': { colonneInitiale: "col-backlog", tag: "Académie (Menu)", titre: "🧠 Capsule de Curiosité Quotidienne", visuel: "Une petite fenêtre pop-up qui s'affiche une seule fois par jour.", code: "Utilisation de l'objet Date() en JavaScript." },
             'id_menu_2': { colonneInitiale: "col-termine", tag: "Académie (Menu)", titre: "🤝 Jauge de Coopération Familiale", visuel: "Une grande barre de progression commune sur la page d'accueil.", code: "Fonctions Asynchrones (async/await) et bases de données." },
-            'id_menu_3': { colonneInitiale: "col-termine", tag: "Académie (Menu)", titre: "🗺️ Quêtes du Monde Réel", visuel: "Bouton pour bloquer l'écran et valider avec code PIN.", code: "Verrouillage d'interface et authentification." }
+            'id_menu_3': { colonneInitiale: "col-termine", tag: "Académie (Menu)", titre: "🗺️ Quêtes du Monde Réel", visuel: "Bouton pour bloquer l'écran et valider avec code PIN.", code: "Verrouillage d'interface et authentification." },
+            // La nouvelle idée du moteur 3D
+            'id_geo_2': { colonneInitiale: "col-backlog", tag: "Géométrie 3D", titre: "🧊 Moteur Isométrique 3D", visuel: "L'enfant place des blocs pour construire des pyramides ou des cubes en perspective isométrique.", code: "Mathématiques de projection spatiale (X, Y vers axe isométrique) et gestion du rendu (Z-index/ordre d'affichage)." }
         };
 
-        // L'objet global qui contiendra TOUTES les idées (Base + Créées par l'utilisateur)
         let TOUTES_LES_IDEES = { ...IDEES_DE_BASE };
 
-        // =======================================================================
-        // MOTEUR D'INITIALISATION
-        // =======================================================================
         async function initialiserKanban() {
             const statusBadge = document.getElementById('cloud-status');
-            
             try {
-                // 1. Récupération des idées personnalisées créées depuis l'interface
                 let reponseIdees = await fetch(FIREBASE_CUSTOM_CARDS_URL);
                 let ideesCustom = await reponseIdees.json() || {};
-                
-                // On fusionne les idées de base et les idées téléchargées
                 Object.assign(TOUTES_LES_IDEES, ideesCustom);
 
-                // 2. Récupération des positions (dans quelle colonne ranger les cartes)
                 let reponsePos = await fetch(FIREBASE_POSITIONS_URL);
                 positionsCloud = await reponsePos.json() || {}; 
                 
                 statusBadge.textContent = "✅ Synchronisé avec Firebase";
                 statusBadge.style.background = "#27ae60";
-
             } catch (erreur) {
                 console.error("Erreur de connexion Firebase", erreur);
                 statusBadge.textContent = "❌ Erreur de connexion au Cloud";
                 statusBadge.style.background = "#e74c3c";
             }
 
-            // 3. Dessin des cartes à l'écran
             for (let clefId in TOUTES_LES_IDEES) {
                 afficherCarteDansDOM(clefId, TOUTES_LES_IDEES[clefId]);
             }
-            
             setTimeout(() => { statusBadge.style.opacity = "0"; }, 3000);
         }
 
-        // Fonction isolée pour créer le bloc HTML d'une carte (Réutilisable)
         function afficherCarteDansDOM(idCarte, informationsCarte) {
             let colonneCible = positionsCloud[idCarte] || informationsCarte.colonneInitiale;
             let conteneurColonne = document.getElementById(colonneCible);
             
-            // Si la colonne n'existe pas (ex: bug), on la force dans le backlog
             if(!conteneurColonne) {
                 conteneurColonne = document.getElementById('col-backlog');
                 colonneCible = 'col-backlog';
@@ -213,7 +186,6 @@
                 <div class="titre-carte">${informationsCarte.titre}</div>
                 <button class="btn-details" onclick="ouvrirModalDetails('${idCarte}')">🔍 Voir les détails</button>
             `;
-
             conteneurColonne.appendChild(divCarte);
         }
 
@@ -223,77 +195,40 @@
             else carteHTML.style.borderLeftColor = "#3498db";
         }
 
-        // =======================================================================
-        // GESTION DU NOUVEAU FORMULAIRE (Création)
-        // =======================================================================
         function ouvrirModalCreation() {
-            // On vide les champs texte avant d'ouvrir
-            document.getElementById('input-tag').value = "";
-            document.getElementById('input-titre').value = "";
-            document.getElementById('input-visuel').value = "";
-            document.getElementById('input-code').value = "";
+            document.getElementById('input-tag').value = ""; document.getElementById('input-titre').value = "";
+            document.getElementById('input-visuel').value = ""; document.getElementById('input-code').value = "";
             document.getElementById('modal-creation').style.display = 'flex';
         }
 
-        function fermerModalCreation() {
-            document.getElementById('modal-creation').style.display = 'none';
-        }
+        function fermerModalCreation() { document.getElementById('modal-creation').style.display = 'none'; }
 
         async function creerEtSauvegarderCarte() {
-            // 1. Lire les valeurs tapées par l'utilisateur
             let nouveauTag = document.getElementById('input-tag').value || "Nouvelle idée";
             let nouveauTitre = document.getElementById('input-titre').value || "Sans titre";
             let nouveauVisuel = document.getElementById('input-visuel').value || "Aucune description.";
             let nouveauCode = document.getElementById('input-code').value || "À définir.";
 
-            // 2. Générer un ID unique (Le timestamp en millisecondes)
             let idUnique = "carte_custom_" + Date.now();
+            let nouvelleCarte = { colonneInitiale: "col-backlog", tag: nouveauTag, titre: nouveauTitre, visuel: nouveauVisuel, code: nouveauCode };
 
-            // 3. Créer l'objet Javascript de la carte
-            let nouvelleCarte = {
-                colonneInitiale: "col-backlog", // Par défaut, toute nouvelle idée va dans le backlog
-                tag: nouveauTag,
-                titre: nouveauTitre,
-                visuel: nouveauVisuel,
-                code: nouveauCode
-            };
-
-            // 4. Ajouter à la mémoire locale pour lecture immédiate
             TOUTES_LES_IDEES[idUnique] = nouvelleCarte;
-
-            // 5. Dessiner la carte immédiatement à l'écran sans rafraîchir la page
             afficherCarteDansDOM(idUnique, nouvelleCarte);
             fermerModalCreation();
 
-            // 6. SAUVEGARDE CLOUD : Envoi à Firebase
-            let donneeAEmettre = {};
-            donneeAEmettre[idUnique] = nouvelleCarte;
+            let donneeAEmettre = {}; donneeAEmettre[idUnique] = nouvelleCarte;
 
             try {
-                await fetch(FIREBASE_CUSTOM_CARDS_URL, {
-                    method: 'PATCH', // Ajoute ou met à jour sans écraser le reste !
-                    body: JSON.stringify(donneeAEmettre)
-                });
+                await fetch(FIREBASE_CUSTOM_CARDS_URL, { method: 'PATCH', body: JSON.stringify(donneeAEmettre) });
             } catch(e) {
-                console.error("Erreur de sauvegarde de la nouvelle carte", e);
-                alert("Erreur de connexion. L'idée est affichée mais pas sauvegardée dans le Cloud.");
+                console.error("Erreur de sauvegarde", e); alert("Idée affichée mais non sauvegardée dans le Cloud.");
             }
         }
 
-        // =======================================================================
-        // GESTION DU DRAG & DROP & SAUVEGARDE DES POSITIONS
-        // =======================================================================
         function attraperCarte(event) { event.dataTransfer.setData("text", event.target.id); }
         function autoriserDepot(event) { event.preventDefault(); }
-        
-        function survoler(event) {
-            let col = event.target.closest('.colonne');
-            if (col) col.classList.add('survol');
-        }
-        function quitterSurvol(event) {
-            let col = event.target.closest('.colonne');
-            if (col) col.classList.remove('survol');
-        }
+        function survoler(event) { let col = event.target.closest('.colonne'); if (col) col.classList.add('survol'); }
+        function quitterSurvol(event) { let col = event.target.closest('.colonne'); if (col) col.classList.remove('survol'); }
         
         async function deposerCarte(event) {
             event.preventDefault();
@@ -302,28 +237,17 @@
                 col.classList.remove('survol');
                 var idCarte = event.dataTransfer.getData("text");
                 var carte = document.getElementById(idCarte);
-                
                 col.appendChild(carte);
                 appliquerCouleurCarte(carte, col.id);
 
-                // Sauvegarde de la position dans la mémoire locale et dans le Cloud
                 positionsCloud[idCarte] = col.id;
-                
-                let miseAJour = {};
-                miseAJour[idCarte] = col.id; 
+                let miseAJour = {}; miseAJour[idCarte] = col.id; 
 
-                try {
-                    await fetch(FIREBASE_POSITIONS_URL, {
-                        method: 'PATCH',
-                        body: JSON.stringify(miseAJour)
-                    });
-                } catch (e) {
-                    console.error("Échec de la sauvegarde sur Firebase", e);
-                }
+                try { await fetch(FIREBASE_POSITIONS_URL, { method: 'PATCH', body: JSON.stringify(miseAJour) }); } 
+                catch (e) { console.error("Échec de la sauvegarde", e); }
             }
         }
 
-        // --- GESTION DE LA MODALE LECTURE ---
         function ouvrirModalDetails(idCarte) {
             const data = TOUTES_LES_IDEES[idCarte];
             if(!data) return;
@@ -334,18 +258,13 @@
         }
         function fermerModalDetails() { document.getElementById('modal-details').style.display = 'none'; }
 
-        // --- OUTIL DE RÉINITIALISATION ---
         async function reinitialiserPositions() {
             if (confirm("Veux-tu remettre toutes les cartes dans leur colonne d'origine ?")) {
-                try {
-                    await fetch(FIREBASE_POSITIONS_URL, { method: 'PUT', body: JSON.stringify({}) });
-                    location.reload(); 
-                } catch(e) {}
+                try { await fetch(FIREBASE_POSITIONS_URL, { method: 'PUT', body: JSON.stringify({}) }); location.reload(); } catch(e) {}
             }
         }
 
         document.addEventListener("DOMContentLoaded", initialiserKanban);
-
     </script>
 </body>
 </html>
