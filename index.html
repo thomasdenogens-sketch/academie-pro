@@ -52,6 +52,14 @@
 
         <h2 class="section-title">🛠️ Outils & Vie Quotidienne</h2>
         <div class="grid-apps">
+            <!-- Ajout de la carte Kanban -->
+            <a href="kanban_projet.html" class="app-card" style="border-color: #3b82f6;">
+                <div class="app-icon">📋</div>
+                <div class="app-title">Kanban Développeur</div>
+                <div class="app-desc">Carnet de route pour gérer les idées de développement, suivre la progression du code et organiser les futurs modules.</div>
+                <div class="app-stats" style="color:#3b82f6;">Gestion de Projet</div>
+            </a>
+            
             <a href="menu_pro.html" class="app-card" style="border-color: #10b981;">
                 <div class="app-icon">🥗</div>
                 <div class="app-title">Assistant Menus Bio</div>
@@ -137,7 +145,6 @@
                 let xpRTS = data.rtsPro ? (data.rtsPro.xp || 0) : 0;
                 let dactyloRecord = data.dactyloPro ? (data.dactyloPro.wpm || 0) : 0;
                 
-                // Extraction de l'XP Pac-Man
                 let xpPacman = data.pacmanPro ? (data.pacmanPro.xp || 0) : 0;
 
                 let totalXp = xpEchecs + xpOthello + xpJacquet + xpMancala + xpGomoku + xpSudoku + xpRTS + xpPacman + (dactyloRecord * 10);
@@ -152,7 +159,6 @@
                 document.getElementById('stat-rts-xp').textContent = `XP: ${xpRTS}`;
                 document.getElementById('stat-dactylo-wpm').textContent = `Record: ${dactyloRecord} MPM`;
                 
-                // Affichage XP Pac-Man
                 document.getElementById('stat-pacman-xp').textContent = `XP: ${xpPacman}`;
 
             } catch(e) { console.error("Erreur Cloud", e); }
