@@ -10,11 +10,19 @@
         h1 { color: #3498db; font-weight: 900; margin-bottom: 5px; }
         .sous-titre { color: #bdc3c7; margin-bottom: 20px; font-weight: bold; text-align: center; }
 
-        /* Indicateur de chargement Cloud */
+        /* Actions en haut de l'écran */
+        .header-actions { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        
+        .btn-action { font-family: 'Nunito', sans-serif; font-weight: bold; font-size: 1.1rem; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; color: white; display: flex; align-items: center; gap: 8px;}
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-action:active { transform: scale(0.95); }
+        
+        .btn-ajouter { background: #27ae60; }
+        .btn-reset { background: #c0392b; }
+
         #cloud-status { background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-bottom: 20px; transition: 0.3s; }
 
         .kanban-board { display: flex; gap: 20px; width: 100%; max-width: 1200px; justify-content: center; align-items: flex-start; }
-
         .colonne { background: #34495e; border-radius: 15px; width: 33%; min-height: 500px; padding: 15px; display: flex; flex-direction: column; gap: 15px; border: 2px dashed transparent; transition: 0.2s; }
         .colonne.survol { border-color: #f1c40f; background: #3d566e; }
 
@@ -33,15 +41,23 @@
         .btn-details { background: #ecf0f1; border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; color: #2980b9; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-details:hover { background: #3498db; color: white; }
 
-        /* La Fenêtre Modale (Détails) */
+        /* Modales (Lecture et Création) */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; color: #2c3e50; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .modal { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; color: #2c3e50; box-shadow: 0 20px 40px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;}
+        
         .modal h2 { color: #2980b9; margin-top: 0; margin-bottom: 20px; font-weight: 900; }
         .modal h3 { color: #e67e22; font-size: 1.1rem; margin-top: 20px; margin-bottom: 5px; }
         .modal p { line-height: 1.6; }
-        .btn-fermer { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; float: right; }
         
-        .btn-danger { background: #c0392b; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        /* Formulaire de création */
+        .form-groupe { margin-bottom: 15px; text-align: left; }
+        .form-groupe label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        .form-groupe input, .form-groupe textarea { width: 100%; padding: 10px; border: 2px solid #bdc3c7; border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 1rem; }
+        .form-groupe textarea { resize: vertical; min-height: 80px; }
+        .form-groupe input:focus, .form-groupe textarea:focus { border-color: #3498db; outline: none; }
+
+        .btn-fermer { background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-sauvegarder { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; float: right; }
     </style>
 </head>
 <body>
@@ -49,7 +65,12 @@
     <h1>🛠️ Mon Carnet de Développeur</h1>
     <p class="sous-titre">Garde une trace de toutes nos idées de code pour Théo et Lola !</p>
 
-    <!-- Petit badge pour savoir si on est connecté à Firebase -->
+    <!-- Boutons d'action -->
+    <div class="header-actions">
+        <button class="btn-action btn-ajouter" onclick="ouvrirModalCreation()">➕ Nouvelle Idée</button>
+        <button class="btn-action btn-reset" onclick="reinitialiserPositions()">🔄 Réinitialiser les positions</button>
+    </div>
+
     <div id="cloud-status">☁️ Connexion à Firebase en cours...</div>
 
     <div class="kanban-board">
@@ -66,9 +87,7 @@
         </div>
     </div>
 
-    <button class="btn-danger" onclick="reinitialiserPositions()">🔄 Réinitialiser les positions (Cloud)</button>
-
-    <!-- MODAL POUR LES DETAILS -->
+    <!-- MODAL 1 : LIRE LES DETAILS D'UNE CARTE -->
     <div id="modal-details" class="overlay">
         <div class="modal">
             <h2 id="modal-titre">Titre</h2>
@@ -76,145 +95,126 @@
             <p id="modal-visuel">Description visuelle...</p>
             <h3>👨‍💻 Apprentissage du Code :</h3>
             <p id="modal-code">Concept de programmation...</p>
-            <button class="btn-fermer" onclick="fermerModal()">Fermer</button>
+            <button class="btn-fermer" style="float: right;" onclick="fermerModalDetails()">Fermer</button>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 2 : CRÉER UNE NOUVELLE CARTE (FORMULAIRE) -->
+    <div id="modal-creation" class="overlay">
+        <div class="modal">
+            <h2>✨ Ajouter une nouvelle idée</h2>
+            
+            <div class="form-groupe">
+                <label>Catégorie (Tag) :</label>
+                <input type="text" id="input-tag" placeholder="Ex: Moteur Scratch, Nouveau Jeu...">
+            </div>
+            
+            <div class="form-groupe">
+                <label>Titre de l'idée :</label>
+                <input type="text" id="input-titre" placeholder="Ex: 📊 Mini-Tableur (Formules)">
+            </div>
+            
+            <div class="form-groupe">
+                <label>👁️ Concept Visuel :</label>
+                <textarea id="input-visuel" placeholder="Que verra l'enfant à l'écran ?"></textarea>
+            </div>
+            
+            <div class="form-groupe">
+                <label>👨‍💻 Apprentissage du Code :</label>
+                <textarea id="input-code" placeholder="Quels concepts de programmation allons-nous utiliser ?"></textarea>
+            </div>
+
+            <button class="btn-fermer" onclick="fermerModalCreation()">Annuler</button>
+            <button class="btn-sauvegarder" onclick="creerEtSauvegarderCarte()">Enregistrer l'idée</button>
             <div style="clear:both;"></div>
         </div>
     </div>
 
     <script>
         // =======================================================================
-        // 🔗 CONNEXION FIREBASE
+        // 🔗 CONFIGURATION FIREBASE
         // =======================================================================
-        const FIREBASE_KANBAN_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/kanban.json";
+        const FIREBASE_POSITIONS_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/kanban.json";
+        const FIREBASE_CUSTOM_CARDS_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/kanban_idees_personnalisees.json";
         
-        // Ce tableau vide va stocker les positions téléchargées depuis Internet
         let positionsCloud = {};
 
-        // =======================================================================
-        // 📚 LA BASE DE DONNÉES DES IDÉES
-        // =======================================================================
-        const MES_IDEES = {
-            'id_geo_1': { 
-                colonneInitiale: "col-encours",
-                tag: "Géométrie", 
-                titre: "📐 GéoPlan Dynamique (GeoGebra)", 
-                visuel: "L'enfant clique sur un sommet de sa forme géométrique, maintient le clic, et déplace la souris. La forme s'étire et se déforme.", 
-                code: "Apprentissage des Écouteurs d'Événements complexes (mousedown, mousemove, mouseup)." 
-            },
-            'id_code_1': { 
-                colonneInitiale: "col-termine",
-                tag: "Moteur Scratch", 
-                titre: "🤔 Bloc de Condition (SI... ALORS)", 
-                visuel: "Un bloc jaune en forme de mâchoire. Le robot ignore les blocs à l'intérieur si la condition est fausse.", 
-                code: "Initiation majeure à l'algorithmique : Les conditions (If/Else) et l'évaluation de Booléens." 
-            },
-            'id_code_2': { 
-                colonneInitiale: "col-termine",
-                tag: "Moteur Scratch", 
-                titre: "🔁 Implémentation des Boucles", 
-                visuel: "Blocs Répéter et Fin Répéter avec indentation visuelle.", 
-                code: "Utilisation d'une 'Pile' (Stack) en mémoire." 
-            },
-            'id_code_3': { 
-                colonneInitiale: "col-backlog",
-                tag: "Moteur Scratch", 
-                titre: "✨ Fonctions personnalisées", 
-                visuel: "Créer un nouveau bloc unique à partir de plusieurs blocs.", 
-                code: "Principe d'Encapsulation et de Réutilisabilité (DRY)." 
-            },
-            'id_code_4': { 
-                colonneInitiale: "col-backlog",
-                tag: "Moteur Scratch", 
-                titre: "🌀 Portails de Téléportation", 
-                visuel: "Deux cases colorées liées entre elles.", 
-                code: "Manipulation des Tableaux (Arrays) et modification des variables de coordonnées X/Y." 
-            },
-            'id_nouv_1': { 
-                colonneInitiale: "col-backlog",
-                tag: "Nouveau Jeu", 
-                titre: "📊 Mini-Tableur (Formules)", 
-                visuel: "Une grille type Excel. L'enfant doit taper des formules (ex: =A1+B2).", 
-                code: "Création d'un 'Parseur' (Analyseur syntaxique)." 
-            },
-            'id_nouv_2': { 
-                colonneInitiale: "col-backlog",
-                tag: "Nouveau Jeu", 
-                titre: "💻 Simulateur OS & Pix", 
-                visuel: "Un faux bureau d'ordinateur dans le navigateur.", 
-                code: "Manipulation du DOM (Document Object Model) et chemins virtuels." 
-            },
-            'id_menu_1': { 
-                colonneInitiale: "col-backlog",
-                tag: "Académie (Menu)", 
-                titre: "🧠 Capsule de Curiosité Quotidienne", 
-                visuel: "Une petite fenêtre pop-up qui s'affiche une seule fois par jour.", 
-                code: "Utilisation de l'objet Date() en JavaScript." 
-            },
-            'id_menu_2': { 
-                colonneInitiale: "col-termine",
-                tag: "Académie (Menu)", 
-                titre: "🤝 Jauge de Coopération Familiale", 
-                visuel: "Une grande barre de progression commune sur la page d'accueil.", 
-                code: "Fonctions Asynchrones (async/await) et bases de données liées." 
-            },
-            'id_menu_3': { 
-                colonneInitiale: "col-termine",
-                tag: "Académie (Menu)", 
-                titre: "🗺️ Quêtes du Monde Réel", 
-                visuel: "Bouton pour bloquer l'écran et valider des missions physiques avec un code PIN.", 
-                code: "Verrouillage d'interface (Overlay) et authentification basique." 
-            }
+        // Les idées de base incluses par défaut dans le code
+        const IDEES_DE_BASE = {
+            'id_geo_1': { colonneInitiale: "col-encours", tag: "Géométrie", titre: "📐 GéoPlan Dynamique (GeoGebra)", visuel: "L'enfant clique sur un sommet de sa forme géométrique, maintient le clic, et déplace la souris.", code: "Écouteurs d'Événements complexes (mousedown, mousemove, mouseup)." },
+            'id_code_1': { colonneInitiale: "col-termine", tag: "Moteur Scratch", titre: "🤔 Bloc de Condition (SI... ALORS)", visuel: "Un bloc jaune en forme de mâchoire.", code: "Initiation à l'algorithmique : Les conditions (If/Else) et l'évaluation de Booléens." },
+            'id_code_2': { colonneInitiale: "col-termine", tag: "Moteur Scratch", titre: "🔁 Implémentation des Boucles", visuel: "Blocs Répéter et Fin Répéter avec indentation visuelle.", code: "Utilisation d'une 'Pile' (Stack) en mémoire." },
+            'id_code_3': { colonneInitiale: "col-backlog", tag: "Moteur Scratch", titre: "✨ Fonctions personnalisées", visuel: "Créer un nouveau bloc unique à partir de plusieurs blocs.", code: "Principe d'Encapsulation et de Réutilisabilité (DRY)." },
+            'id_code_4': { colonneInitiale: "col-backlog", tag: "Moteur Scratch", titre: "🌀 Portails de Téléportation", visuel: "Deux cases colorées liées entre elles.", code: "Manipulation des Tableaux (Arrays) et coordonnées X/Y." },
+            'id_menu_2': { colonneInitiale: "col-termine", tag: "Académie (Menu)", titre: "🤝 Jauge de Coopération Familiale", visuel: "Une grande barre de progression commune sur la page d'accueil.", code: "Fonctions Asynchrones (async/await) et bases de données." },
+            'id_menu_3': { colonneInitiale: "col-termine", tag: "Académie (Menu)", titre: "🗺️ Quêtes du Monde Réel", visuel: "Bouton pour bloquer l'écran et valider avec code PIN.", code: "Verrouillage d'interface et authentification." }
         };
 
+        // L'objet global qui contiendra TOUTES les idées (Base + Créées par l'utilisateur)
+        let TOUTES_LES_IDEES = { ...IDEES_DE_BASE };
+
         // =======================================================================
-        // INITIALISATION (Téléchargement depuis Firebase)
+        // MOTEUR D'INITIALISATION
         // =======================================================================
         async function initialiserKanban() {
             const statusBadge = document.getElementById('cloud-status');
             
             try {
-                // ÉTAPE 1 : On télécharge les données depuis Firebase
-                let reponse = await fetch(FIREBASE_KANBAN_URL);
-                positionsCloud = await reponse.json() || {}; // Si c'est vide, on crée un objet vide
+                // 1. Récupération des idées personnalisées créées depuis l'interface
+                let reponseIdees = await fetch(FIREBASE_CUSTOM_CARDS_URL);
+                let ideesCustom = await reponseIdees.json() || {};
+                
+                // On fusionne les idées de base et les idées téléchargées
+                Object.assign(TOUTES_LES_IDEES, ideesCustom);
+
+                // 2. Récupération des positions (dans quelle colonne ranger les cartes)
+                let reponsePos = await fetch(FIREBASE_POSITIONS_URL);
+                positionsCloud = await reponsePos.json() || {}; 
                 
                 statusBadge.textContent = "✅ Synchronisé avec Firebase";
                 statusBadge.style.background = "#27ae60";
 
             } catch (erreur) {
                 console.error("Erreur de connexion Firebase", erreur);
-                statusBadge.textContent = "❌ Erreur de connexion au Cloud (Mode local)";
+                statusBadge.textContent = "❌ Erreur de connexion au Cloud";
                 statusBadge.style.background = "#e74c3c";
             }
 
-            // ÉTAPE 2 : On dessine les cartes
-            for (let clefId in MES_IDEES) {
-                let info = MES_IDEES[clefId];
-                
-                // On vérifie le Cloud. S'il n'y a rien pour cette carte, on prend sa colonne par défaut
-                let colonneActuelle = positionsCloud[clefId] || info.colonneInitiale;
-                
-                let divCarte = document.createElement("div");
-                divCarte.className = "carte-tache";
-                divCarte.id = clefId;
-                divCarte.draggable = true;
-                divCarte.ondragstart = attraperCarte;
-                
-                appliquerCouleurCarte(divCarte, colonneActuelle);
-
-                divCarte.innerHTML = `
-                    <span class="tag">${info.tag}</span>
-                    <div class="titre-carte">${info.titre}</div>
-                    <button class="btn-details" onclick="ouvrirModal('${clefId}')">🔍 Voir les détails</button>
-                `;
-
-                let conteneurColonne = document.getElementById(colonneActuelle);
-                if (conteneurColonne) {
-                    conteneurColonne.appendChild(divCarte);
-                }
+            // 3. Dessin des cartes à l'écran
+            for (let clefId in TOUTES_LES_IDEES) {
+                afficherCarteDansDOM(clefId, TOUTES_LES_IDEES[clefId]);
             }
             
-            // Masquer le badge au bout de 3 secondes pour faire propre
             setTimeout(() => { statusBadge.style.opacity = "0"; }, 3000);
+        }
+
+        // Fonction isolée pour créer le bloc HTML d'une carte (Réutilisable)
+        function afficherCarteDansDOM(idCarte, informationsCarte) {
+            let colonneCible = positionsCloud[idCarte] || informationsCarte.colonneInitiale;
+            let conteneurColonne = document.getElementById(colonneCible);
+            
+            // Si la colonne n'existe pas (ex: bug), on la force dans le backlog
+            if(!conteneurColonne) {
+                conteneurColonne = document.getElementById('col-backlog');
+                colonneCible = 'col-backlog';
+            }
+
+            let divCarte = document.createElement("div");
+            divCarte.className = "carte-tache";
+            divCarte.id = idCarte;
+            divCarte.draggable = true;
+            divCarte.ondragstart = attraperCarte;
+            
+            appliquerCouleurCarte(divCarte, colonneCible);
+
+            divCarte.innerHTML = `
+                <span class="tag">${informationsCarte.tag}</span>
+                <div class="titre-carte">${informationsCarte.titre}</div>
+                <button class="btn-details" onclick="ouvrirModalDetails('${idCarte}')">🔍 Voir les détails</button>
+            `;
+
+            conteneurColonne.appendChild(divCarte);
         }
 
         function appliquerCouleurCarte(carteHTML, idColonne) {
@@ -223,7 +223,66 @@
             else carteHTML.style.borderLeftColor = "#3498db";
         }
 
-        // --- GESTION DU DRAG & DROP & SAUVEGARDE CLOUD ---
+        // =======================================================================
+        // GESTION DU NOUVEAU FORMULAIRE (Création)
+        // =======================================================================
+        function ouvrirModalCreation() {
+            // On vide les champs texte avant d'ouvrir
+            document.getElementById('input-tag').value = "";
+            document.getElementById('input-titre').value = "";
+            document.getElementById('input-visuel').value = "";
+            document.getElementById('input-code').value = "";
+            document.getElementById('modal-creation').style.display = 'flex';
+        }
+
+        function fermerModalCreation() {
+            document.getElementById('modal-creation').style.display = 'none';
+        }
+
+        async function creerEtSauvegarderCarte() {
+            // 1. Lire les valeurs tapées par l'utilisateur
+            let nouveauTag = document.getElementById('input-tag').value || "Nouvelle idée";
+            let nouveauTitre = document.getElementById('input-titre').value || "Sans titre";
+            let nouveauVisuel = document.getElementById('input-visuel').value || "Aucune description.";
+            let nouveauCode = document.getElementById('input-code').value || "À définir.";
+
+            // 2. Générer un ID unique (Le timestamp en millisecondes)
+            let idUnique = "carte_custom_" + Date.now();
+
+            // 3. Créer l'objet Javascript de la carte
+            let nouvelleCarte = {
+                colonneInitiale: "col-backlog", // Par défaut, toute nouvelle idée va dans le backlog
+                tag: nouveauTag,
+                titre: nouveauTitre,
+                visuel: nouveauVisuel,
+                code: nouveauCode
+            };
+
+            // 4. Ajouter à la mémoire locale pour lecture immédiate
+            TOUTES_LES_IDEES[idUnique] = nouvelleCarte;
+
+            // 5. Dessiner la carte immédiatement à l'écran sans rafraîchir la page
+            afficherCarteDansDOM(idUnique, nouvelleCarte);
+            fermerModalCreation();
+
+            // 6. SAUVEGARDE CLOUD : Envoi à Firebase
+            let donneeAEmettre = {};
+            donneeAEmettre[idUnique] = nouvelleCarte;
+
+            try {
+                await fetch(FIREBASE_CUSTOM_CARDS_URL, {
+                    method: 'PATCH', // Ajoute ou met à jour sans écraser le reste !
+                    body: JSON.stringify(donneeAEmettre)
+                });
+            } catch(e) {
+                console.error("Erreur de sauvegarde de la nouvelle carte", e);
+                alert("Erreur de connexion. L'idée est affichée mais pas sauvegardée dans le Cloud.");
+            }
+        }
+
+        // =======================================================================
+        // GESTION DU DRAG & DROP & SAUVEGARDE DES POSITIONS
+        // =======================================================================
         function attraperCarte(event) { event.dataTransfer.setData("text", event.target.id); }
         function autoriserDepot(event) { event.preventDefault(); }
         
@@ -236,7 +295,6 @@
             if (col) col.classList.remove('survol');
         }
         
-        // 🚀 C'EST ICI QU'ON ENVOIE À FIREBASE 
         async function deposerCarte(event) {
             event.preventDefault();
             let col = event.target.closest('.colonne');
@@ -248,12 +306,14 @@
                 col.appendChild(carte);
                 appliquerCouleurCarte(carte, col.id);
 
-                // SAUVEGARDE CLOUD : On utilise la méthode PATCH pour ne mettre à jour que cette carte précise
+                // Sauvegarde de la position dans la mémoire locale et dans le Cloud
+                positionsCloud[idCarte] = col.id;
+                
                 let miseAJour = {};
-                miseAJour[idCarte] = col.id; // Ex: { "id_code_1": "col-termine" }
+                miseAJour[idCarte] = col.id; 
 
                 try {
-                    await fetch(FIREBASE_KANBAN_URL, {
+                    await fetch(FIREBASE_POSITIONS_URL, {
                         method: 'PATCH',
                         body: JSON.stringify(miseAJour)
                     });
@@ -263,34 +323,27 @@
             }
         }
 
-        // --- GESTION DE LA MODALE ---
-        function ouvrirModal(idCarte) {
-            const data = MES_IDEES[idCarte];
+        // --- GESTION DE LA MODALE LECTURE ---
+        function ouvrirModalDetails(idCarte) {
+            const data = TOUTES_LES_IDEES[idCarte];
             if(!data) return;
             document.getElementById('modal-titre').textContent = data.titre;
             document.getElementById('modal-visuel').textContent = data.visuel;
             document.getElementById('modal-code').textContent = data.code;
             document.getElementById('modal-details').style.display = 'flex';
         }
-        function fermerModal() { document.getElementById('modal-details').style.display = 'none'; }
+        function fermerModalDetails() { document.getElementById('modal-details').style.display = 'none'; }
 
-        // --- OUTIL DE RÉINITIALISATION CLOUD ---
+        // --- OUTIL DE RÉINITIALISATION ---
         async function reinitialiserPositions() {
-            if (confirm("Veux-tu effacer les positions sur Firebase et tout remettre par défaut ?")) {
+            if (confirm("Veux-tu remettre toutes les cartes dans leur colonne d'origine ?")) {
                 try {
-                    // La méthode PUT avec un objet vide {} efface complètement le dossier /kanban.json
-                    await fetch(FIREBASE_KANBAN_URL, {
-                        method: 'PUT',
-                        body: JSON.stringify({})
-                    });
+                    await fetch(FIREBASE_POSITIONS_URL, { method: 'PUT', body: JSON.stringify({}) });
                     location.reload(); 
-                } catch(e) {
-                    console.error("Erreur de réinitialisation", e);
-                }
+                } catch(e) {}
             }
         }
 
-        // Lancement de l'algorithme asynchrone au chargement
         document.addEventListener("DOMContentLoaded", initialiserKanban);
 
     </script>
