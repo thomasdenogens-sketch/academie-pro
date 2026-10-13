@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau Kanban - Développement de l'Académie</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Nunito', sans-serif; background: #2c3e50; color: #ecf0f1; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #3498db; font-weight: 900; margin-bottom: 5px; }
+        .sous-titre { color: #bdc3c7; margin-bottom: 20px; font-weight: bold; text-align: center; }
+
+        /* Indicateur de chargement Cloud */
+        #cloud-status { background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-bottom: 20px; transition: 0.3s; }
+
+        .kanban-board { display: flex; gap: 20px; width: 100%; max-width: 1200px; justify-content: center; align-items: flex-start; }
+
+        .colonne { background: #34495e; border-radius: 15px; width: 33%; min-height: 500px; padding: 15px; display: flex; flex-direction: column; gap: 15px; border: 2px dashed transparent; transition: 0.2s; }
+        .colonne.survol { border-color: #f1c40f; background: #3d566e; }
+
+        .titre-colonne { font-size: 1.3rem; font-weight: 900; text-align: center; padding-bottom: 10px; border-bottom: 2px solid #7f8c8d; margin-bottom: 10px; }
+        #col-backlog .titre-colonne { color: #e74c3c; border-bottom-color: #e74c3c; }
+        #col-encours .titre-colonne { color: #f39c12; border-bottom-color: #f39c12; }
+        #col-termine .titre-colonne { color: #2ecc71; border-bottom-color: #2ecc71; }
+
+        .carte-tache { background: white; color: #2c3e50; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 6px solid #3498db; cursor: grab; position: relative; animation: fadeIn 0.3s; }
+        .carte-tache:active { cursor: grabbing; opacity: 0.8; transform: scale(0.98); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .tag { font-size: 0.8rem; background: #ecf0f1; padding: 3px 8px; border-radius: 10px; color: #7f8c8d; margin-bottom: 8px; display: inline-block; font-weight: bold; }
+        .titre-carte { font-weight: 900; font-size: 1.1rem; margin-bottom: 10px; line-height: 1.3; }
+        
+        .btn-details { background: #ecf0f1; border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; color: #2980b9; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-details:hover { background: #3498db; color: white; }
+
+        /* La Fenêtre Modale (Détails) */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; color: #2c3e50; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .modal h2 { color: #2980b9; margin-top: 0; margin-bottom: 20px; font-weight: 900; }
+        .modal h3 { color: #e67e22; font-size: 1.1rem; margin-top: 20px; margin-bottom: 5px; }
+        .modal p { line-height: 1.6; }
+        .btn-fermer { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; float: right; }
+        
+        .btn-danger { background: #c0392b; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>🛠️ Mon Carnet de Développeur</h1>
+    <p class="sous-titre">Garde une trace de toutes nos idées de code pour Théo et Lola !</p>
+
+    <!-- Petit badge pour savoir si on est connecté à Firebase -->
+    <div id="cloud-status">☁️ Connexion à Firebase en cours...</div>
+
+    <div class="kanban-board">
+        <div class="colonne" id="col-backlog" ondrop="deposerCarte(event)" ondragover="autoriserDepot(event)" ondragenter="survoler(event)" ondragleave="quitterSurvol(event)">
+            <div class="titre-colonne">💡 Idées (Backlog)</div>
+        </div>
+
+        <div class="colonne" id="col-encours" ondrop="deposerCarte(event)" ondragover="autoriserDepot(event)" ondragenter="survoler(event)" ondragleave="quitterSurvol(event)">
+            <div class="titre-colonne">⚙️ En développement</div>
+        </div>
+
+        <div class="colonne" id="col-termine" ondrop="deposerCarte(event)" ondragover="autoriserDepot(event)" ondragenter="survoler(event)" ondragleave="quitterSurvol(event)">
+            <div class="titre-colonne">✅ Code en Production</div>
+        </div>
+    </div>
+
+    <button class="btn-danger" onclick="reinitialiserPositions()">🔄 Réinitialiser les positions (Cloud)</button>
+
+    <!-- MODAL POUR LES DETAILS -->
+    <div id="modal-details" class="overlay">
+        <div class="modal">
+            <h2 id="modal-titre">Titre</h2>
+            <h3>👁️ Concept Visuel :</h3>
+            <p id="modal-visuel">Description visuelle...</p>
+            <h3>👨‍💻 Apprentissage du Code :</h3>
+            <p id="modal-code">Concept de programmation...</p>
+            <button class="btn-fermer" onclick="fermerModal()">Fermer</button>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+
+    <script>
+        // =======================================================================
+        // 🔗 CONNEXION FIREBASE
+        // =======================================================================
+        const FIREBASE_KANBAN_URL = "https://academie-famille-default-rtdb.europe-west1.firebasedatabase.app/kanban.json";
+        
+        // Ce tableau vide va stocker les positions téléchargées depuis Internet
+        let positionsCloud = {};
+
+        // =======================================================================
+        // 📚 LA BASE DE DONNÉES DES IDÉES
+        // =======================================================================
+        const MES_IDEES = {
+            'id_geo_1': { 
+                colonneInitiale: "col-encours",
+                tag: "Géométrie", 
+                titre: "📐 GéoPlan Dynamique (GeoGebra)", 
+                visuel: "L'enfant clique sur un sommet de sa forme géométrique, maintient le clic, et déplace la souris. La forme s'étire et se déforme.", 
+                code: "Apprentissage des Écouteurs d'Événements complexes (mousedown, mousemove, mouseup)." 
+            },
+            'id_code_1': { 
+                colonneInitiale: "col-termine",
+                tag: "Moteur Scratch", 
+                titre: "🤔 Bloc de Condition (SI... ALORS)", 
+                visuel: "Un bloc jaune en forme de mâchoire. Le robot ignore les blocs à l'intérieur si la condition est fausse.", 
+                code: "Initiation majeure à l'algorithmique : Les conditions (If/Else) et l'évaluation de Booléens." 
+            },
+            'id_code_2': { 
+                colonneInitiale: "col-termine",
+                tag: "Moteur Scratch", 
+                titre: "🔁 Implémentation des Boucles", 
+                visuel: "Blocs Répéter et Fin Répéter avec indentation visuelle.", 
+                code: "Utilisation d'une 'Pile' (Stack) en mémoire." 
+            },
+            'id_code_3': { 
+                colonneInitiale: "col-backlog",
+                tag: "Moteur Scratch", 
+                titre: "✨ Fonctions personnalisées", 
+                visuel: "Créer un nouveau bloc unique à partir de plusieurs blocs.", 
+                code: "Principe d'Encapsulation et de Réutilisabilité (DRY)." 
+            },
+            'id_code_4': { 
+                colonneInitiale: "col-backlog",
+                tag: "Moteur Scratch", 
+                titre: "🌀 Portails de Téléportation", 
+                visuel: "Deux cases colorées liées entre elles.", 
+                code: "Manipulation des Tableaux (Arrays) et modification des variables de coordonnées X/Y." 
+            },
+            'id_nouv_1': { 
+                colonneInitiale: "col-backlog",
+                tag: "Nouveau Jeu", 
+                titre: "📊 Mini-Tableur (Formules)", 
+                visuel: "Une grille type Excel. L'enfant doit taper des formules (ex: =A1+B2).", 
+                code: "Création d'un 'Parseur' (Analyseur syntaxique)." 
+            },
+            'id_nouv_2': { 
+                colonneInitiale: "col-backlog",
+                tag: "Nouveau Jeu", 
+                titre: "💻 Simulateur OS & Pix", 
+                visuel: "Un faux bureau d'ordinateur dans le navigateur.", 
+                code: "Manipulation du DOM (Document Object Model) et chemins virtuels." 
+            },
+            'id_menu_1': { 
+                colonneInitiale: "col-backlog",
+                tag: "Académie (Menu)", 
+                titre: "🧠 Capsule de Curiosité Quotidienne", 
+                visuel: "Une petite fenêtre pop-up qui s'affiche une seule fois par jour.", 
+                code: "Utilisation de l'objet Date() en JavaScript." 
+            },
+            'id_menu_2': { 
+                colonneInitiale: "col-termine",
+                tag: "Académie (Menu)", 
+                titre: "🤝 Jauge de Coopération Familiale", 
+                visuel: "Une grande barre de progression commune sur la page d'accueil.", 
+                code: "Fonctions Asynchrones (async/await) et bases de données liées." 
+            },
+            'id_menu_3': { 
+                colonneInitiale: "col-termine",
+                tag: "Académie (Menu)", 
+                titre: "🗺️ Quêtes du Monde Réel", 
+                visuel: "Bouton pour bloquer l'écran et valider des missions physiques avec un code PIN.", 
+                code: "Verrouillage d'interface (Overlay) et authentification basique." 
+            }
+        };
+
+        // =======================================================================
+        // INITIALISATION (Téléchargement depuis Firebase)
+        // =======================================================================
+        async function initialiserKanban() {
+            const statusBadge = document.getElementById('cloud-status');
+            
+            try {
+                // ÉTAPE 1 : On télécharge les données depuis Firebase
+                let reponse = await fetch(FIREBASE_KANBAN_URL);
+                positionsCloud = await reponse.json() || {}; // Si c'est vide, on crée un objet vide
+                
+                statusBadge.textContent = "✅ Synchronisé avec Firebase";
+                statusBadge.style.background = "#27ae60";
+
+            } catch (erreur) {
+                console.error("Erreur de connexion Firebase", erreur);
+                statusBadge.textContent = "❌ Erreur de connexion au Cloud (Mode local)";
+                statusBadge.style.background = "#e74c3c";
+            }
+
+            // ÉTAPE 2 : On dessine les cartes
+            for (let clefId in MES_IDEES) {
+                let info = MES_IDEES[clefId];
+                
+                // On vérifie le Cloud. S'il n'y a rien pour cette carte, on prend sa colonne par défaut
+                let colonneActuelle = positionsCloud[clefId] || info.colonneInitiale;
+                
+                let divCarte = document.createElement("div");
+                divCarte.className = "carte-tache";
+                divCarte.id = clefId;
+                divCarte.draggable = true;
+                divCarte.ondragstart = attraperCarte;
+                
+                appliquerCouleurCarte(divCarte, colonneActuelle);
+
+                divCarte.innerHTML = `
+                    <span class="tag">${info.tag}</span>
+                    <div class="titre-carte">${info.titre}</div>
+                    <button class="btn-details" onclick="ouvrirModal('${clefId}')">🔍 Voir les détails</button>
+                `;
+
+                let conteneurColonne = document.getElementById(colonneActuelle);
+                if (conteneurColonne) {
+                    conteneurColonne.appendChild(divCarte);
+                }
+            }
+            
+            // Masquer le badge au bout de 3 secondes pour faire propre
+            setTimeout(() => { statusBadge.style.opacity = "0"; }, 3000);
+        }
+
+        function appliquerCouleurCarte(carteHTML, idColonne) {
+            if (idColonne === 'col-termine') carteHTML.style.borderLeftColor = "#2ecc71";
+            else if (idColonne === 'col-encours') carteHTML.style.borderLeftColor = "#f39c12";
+            else carteHTML.style.borderLeftColor = "#3498db";
+        }
+
+        // --- GESTION DU DRAG & DROP & SAUVEGARDE CLOUD ---
+        function attraperCarte(event) { event.dataTransfer.setData("text", event.target.id); }
+        function autoriserDepot(event) { event.preventDefault(); }
+        
+        function survoler(event) {
+            let col = event.target.closest('.colonne');
+            if (col) col.classList.add('survol');
+        }
+        function quitterSurvol(event) {
+            let col = event.target.closest('.colonne');
+            if (col) col.classList.remove('survol');
+        }
+        
+        // 🚀 C'EST ICI QU'ON ENVOIE À FIREBASE 
+        async function deposerCarte(event) {
+            event.preventDefault();
+            let col = event.target.closest('.colonne');
+            if (col) {
+                col.classList.remove('survol');
+                var idCarte = event.dataTransfer.getData("text");
+                var carte = document.getElementById(idCarte);
+                
+                col.appendChild(carte);
+                appliquerCouleurCarte(carte, col.id);
+
+                // SAUVEGARDE CLOUD : On utilise la méthode PATCH pour ne mettre à jour que cette carte précise
+                let miseAJour = {};
+                miseAJour[idCarte] = col.id; // Ex: { "id_code_1": "col-termine" }
+
+                try {
+                    await fetch(FIREBASE_KANBAN_URL, {
+                        method: 'PATCH',
+                        body: JSON.stringify(miseAJour)
+                    });
+                } catch (e) {
+                    console.error("Échec de la sauvegarde sur Firebase", e);
+                }
+            }
+        }
+
+        // --- GESTION DE LA MODALE ---
+        function ouvrirModal(idCarte) {
+            const data = MES_IDEES[idCarte];
+            if(!data) return;
+            document.getElementById('modal-titre').textContent = data.titre;
+            document.getElementById('modal-visuel').textContent = data.visuel;
+            document.getElementById('modal-code').textContent = data.code;
+            document.getElementById('modal-details').style.display = 'flex';
+        }
+        function fermerModal() { document.getElementById('modal-details').style.display = 'none'; }
+
+        // --- OUTIL DE RÉINITIALISATION CLOUD ---
+        async function reinitialiserPositions() {
+            if (confirm("Veux-tu effacer les positions sur Firebase et tout remettre par défaut ?")) {
+                try {
+                    // La méthode PUT avec un objet vide {} efface complètement le dossier /kanban.json
+                    await fetch(FIREBASE_KANBAN_URL, {
+                        method: 'PUT',
+                        body: JSON.stringify({})
+                    });
+                    location.reload(); 
+                } catch(e) {
+                    console.error("Erreur de réinitialisation", e);
+                }
+            }
+        }
+
+        // Lancement de l'algorithme asynchrone au chargement
+        document.addEventListener("DOMContentLoaded", initialiserKanban);
+
+    </script>
+</body>
+</html>
